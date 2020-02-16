@@ -9,7 +9,7 @@ interface DisplayComponentProps {
 
 const DisplayComponent: React.StatelessComponent<DisplayComponentProps> = (props) => {
   const imageComponent = <div className="component">
-    <img src={props.previewURL} style={{ width: "100%" }} />
+    <img src={props.previewURL} style={{ marginBottom: "0.5em", width: "100%" }} />
   </div>;
 
   return <ComponentContainer

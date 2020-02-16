@@ -21,7 +21,7 @@ const ComponentContainer: React.StatelessComponent<ComponentContainerProps> = (p
     <div>
       {props.context &&
         <div className="component">
-          <div className="context">{props.context}</div>
+          <div className="information">{props.context}</div>
         </div>
       }
       {props.children}

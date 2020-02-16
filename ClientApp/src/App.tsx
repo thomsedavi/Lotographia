@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import * as React from "react";
 import { Route } from 'react-router';
 import { Layout } from './components/Layout';
 import { Home } from './components/Home';
@@ -11,9 +11,7 @@ import { CapitalParty } from './pictures/CapitalParty';
 
 import './custom.css'
 
-export default class App extends Component {
-  static displayName = App.name;
-
+export default class App extends React.Component {
   render () {
     return (
       <Layout>

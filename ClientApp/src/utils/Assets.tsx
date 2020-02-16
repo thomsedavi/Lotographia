@@ -7,7 +7,7 @@ const StatusLoading = <svg
   xmlns="http://www.w3.org/2000/svg"
   xmlnsXlink="http://www.w3.org/1999/xlink"
   xmlSpace="preserve"
-  style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, marginBottom: "1em", overflow: "visible" }}>
+  style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, marginBottom: "1.5em", marginTop: "0.25em", overflow: "visible" }}>
   <text x="0px" y="100px" style={{ fontStyle: "italic", fontSize: "96px", fill: "#06f" }}>Loading</text>
   <path d="M430,0c0,0 -10,21 -10,30c0,5.519 4.481,10 10,10c5.519,0 10,-4.481 10,-10c0,-9 -10,-30 -10,-30Z" style={{ fill: "#fcf" }} /><path d="M450,100c0,0 -10,-21 -10,-30c0,-5.519 4.481,-10 10,-10c5.519,0 10,4.481 10,10c0,9 -10,30 -10,30Z" style={{ fill: "#fcf" }} />
   <path d="M260,27.99c0,0 21,10 30,10c5.519,0 10,-4.48 10,-10c0,-5.519 -4.481,-10 -10,-10c-9,0 -30,10 -30,10Z" style={{ fill: "#fcf" }} />
@@ -54,7 +54,7 @@ const StatusReady = <svg
   xmlns="http://www.w3.org/2000/svg"
   xmlnsXlink="http://www.w3.org/1999/xlink"
   xmlSpace="preserve"
-  style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, marginBottom: "1em", overflow: "visible" }}>
+  style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, marginBottom: "1.5em", marginTop: "0.25em", overflow: "visible" }}>
   <text x="0px" y="100px" style={{ fontStyle: "italic", fontSize: "96px", fill: "#06f" }}>Ready!</text>
   <path d="M450,0c0,0 -10,21 -10,30c0,5.519 4.481,10 10,10c5.519,0 10,-4.481 10,-10c0,-9 -10,-30 -10,-30Z" style={{ fill: "#fcf" }} />
   <path d="M450,100c0,0 -10,-21 -10,-30c0,-5.519 4.481,-10 10,-10c5.519,0 10,4.481 10,10c0,9 -10,30 -10,30Z" style={{ fill: "#fcf" }} />

@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="ClientApp\src\App.tsx" />
     <None Remove="ClientApp\src\categories\About.tsx" />
     <None Remove="ClientApp\src\categories\Photographia.tsx" />
     <None Remove="ClientApp\src\components\CheckboxOptionsComponent.tsx" />
@@ -36,13 +37,21 @@
     <None Remove="ClientApp\src\components\Home.tsx" />
     <None Remove="ClientApp\src\components\HomeOld.tsx" />
     <None Remove="ClientApp\src\components\InfoComponent.tsx" />
+    <None Remove="ClientApp\src\components\Layout.tsx" />
+    <None Remove="ClientApp\src\components\NavMenu.tsx" />
     <None Remove="ClientApp\src\components\Option.tsx" />
     <None Remove="ClientApp\src\components\OptionComponent.tsx" />
     <None Remove="ClientApp\src\components\RadioImage.ts" />
     <None Remove="ClientApp\src\components\RadioOptionsComponent.tsx" />
     <None Remove="ClientApp\src\components\TextComponent.tsx" />
+    <None Remove="ClientApp\src\index.tsx" />
+    <None Remove="ClientApp\src\registerServiceWorker.js" />
     <None Remove="ClientApp\src\utils\Assets.tsx" />
     <None Remove="ClientApp\src\utils\Utils.tsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Include="ClientApp\src\registerServiceWorker.js" />
   </ItemGroup>
 
   <ItemGroup>
