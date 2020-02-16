@@ -1,14 +1,201 @@
-/* Provide sufficient contrast against white background */
-a {
-  color: #0366d6;
+@media all and (max-width: 575px) {
+    .container {
+        max-width: 500px;
+    }
 }
 
-code {
-  color: #E01A76;
+@media all and (min-width: 576px) {
+    .container {
+        max-width: 550px;
+    }
+
+    .option .image {
+        height: 4em;
+        width: 4em;
+    }
+
+    .option .image.left {
+        float: left;
+        margin-left: 0.25em;
+        margin-right: 0.75em;
+    }
+
+    .option .image.right {
+        float: right;
+        margin-left: 0.7em;
+        margin-right: 0.25em;
+    }
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+@media all and (min-width: 768px) {
+    .container {
+        max-width: 600px;
+    }
+}
+
+@media all and (min-width: 992px) {
+    .container {
+        max-width: 750px;
+    }
+}
+
+@media all and (min-width: 1200px) {
+    .container {
+        max-width: 800px;
+    }
+}
+
+.component {
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.title {
+    color: #024;
+    font-size: 3em;
+    font-weight: 700;
+}
+
+.heading {
+    font-size: 1.5em;
+    font-family: Courier New, Courier, monospace;
+    text-decoration: underline;
+}
+
+.context, .information {
+    display: inline-block;
+    font-size: 1.25em;
+    width: 75%;
+}
+
+.option {
+    color: #7bf;
+    border-color: #bdf;
+    border-style: solid;
+    border-width: 2px;
+    overflow: auto;
+    padding: 0.5em 0.75em;
+}
+
+.option:not(:last-child) {
+    margin-bottom: 16px;
+}
+
+.option.active {
+    border-color: #7bf;
+    color: #000;
+}
+
+.option.active.selected {
+    border-color: #bdf;
+}
+
+.option.active:hover {
+    background-color: #def;
+    cursor: pointer;
+}
+
+.option.selected {
+    background-color: #bdf;
+    color: #000;
+}
+
+.option.active.selected:hover {
+    background-color: #9cf;
+    border-color: #9cf;
+}
+
+.option .name {
+    font-size: 1.25em;
+    font-weight: 700;
+    text-align: center;
+}
+
+.option .description {
+    text-align: center;
+}
+
+.option .image {
+    height: 6em;
+    width: 6em;
+}
+
+.text {
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.button {
+    border-style: solid;
+    border-width: 2px;
+    display: inline-block;
+    font-weight: 700;
+    padding: 4px 12px;
+}
+
+.button:not(:last-child) {
+    margin-right: 8px;
+}
+
+.button.active:hover {
+    cursor: pointer;
+}
+
+.button.action {
+    color: #fff;
+}
+
+.button.action.active {
+    background-color: #048;
+    border-color: #000;
+}
+
+.button.action.active:hover {
+    background-color: #05a;
+}
+
+.button.navigation {
+    border-color: #bdf;
+    color: #7bf;
+}
+
+.button.navigation.active {
+    background-color: #bdf;
+    border-color: #048;
+    color: #000;
+}
+
+.button.navigation.active:hover {
+    background-color: #9cf;
+}
+
+.character {
+    background-color: #000;
+    color: #fff;
+    display: inline-block;
+}
+
+.character.invalid {
+    background-color: #f33;
+    color: #000;
+}
+
+.character.pad-left {
+    padding-left: 0.25em;
+}
+
+.character.pad-right {
+    padding-right: 0.25em;
+}
+
+.character.empty {
+    background-color: #bdf;
+}
+
+.character.fixed {
+    color: #bdf;
+}
+
+.character.fixed.invalid {
+    color: #600;
 }
