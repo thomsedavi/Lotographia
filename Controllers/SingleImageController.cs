@@ -10,6 +10,135 @@ namespace Lotographia.Controllers
 {
     public class SingleImageController : Controller
     {
+        public JsonResult GetProcessedTexts()
+        {
+            GetProcessedTextsBody details;
+
+            using (var reader = new StreamReader(Request.Body))
+            {
+                var body = reader.ReadToEnd();
+
+                details = JObject.Parse(body).ToObject<GetProcessedTextsBody>();
+            }
+
+            var g = Graphics.FromImage(new Bitmap(1, 1));
+
+            var itemIndex = 0;
+            var processedTexts = new ProcessedText[details.Lines.Length];
+            var hasReachedEnd = false;
+
+            for (var i = 0; i < details.Lines.Length; i++)
+            {
+                var line = details.Lines[i];
+
+                var fontFamily = line.FontFamily switch
+                {
+                    "SansSerif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.SansSerif),
+                    "Serif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.Serif),
+                    _ => new FontFamily(System.Drawing.Text.GenericFontFamilies.Monospace),
+                };
+
+                var font = new Font(fontFamily, 16, FontStyle.Bold);
+
+                var allowedWidth = new string('_', line.MaximumLength);
+                var maximumTextSize = g.MeasureString(allowedWidth, font).Width;
+
+                var nextLine = false;
+                var shownText = "";
+                var hiddenText = "";
+                var finalTextBeforeNext = "";
+                var finalTextAfterNext = "";
+
+                while (!nextLine)
+                {
+                    if (itemIndex >= details.TextComponents.Length)
+                    {
+                        finalTextBeforeNext = finalTextAfterNext;
+                        nextLine = true;
+                        hasReachedEnd = true;
+                    }
+                    else
+                    {
+                        var item = details.TextComponents[itemIndex];
+
+                        if (item.Type == TextComponentType.Return)
+                        {
+                            nextLine = true;
+                            itemIndex++;
+                        }
+                        else if (item.Type == TextComponentType.Word)
+                        {
+                            finalTextBeforeNext = finalTextAfterNext;
+                            finalTextAfterNext += item.VariantText.HiddenText;
+                            var finalTextSize = g.MeasureString(finalTextAfterNext, font).Width;
+
+                            if (finalTextSize > maximumTextSize)
+                            {
+                                nextLine = true;
+                            }
+                            else
+                            {
+                                shownText += item.VariantText.ShownText;
+                                hiddenText += item.VariantText.HiddenText;
+                                itemIndex++;
+                            }
+                        }
+                        else if (item.Type == TextComponentType.Hyphen)
+                        {
+                            finalTextBeforeNext = finalTextAfterNext;
+                            finalTextAfterNext += "-";
+                            var finalTextSize = g.MeasureString(finalTextAfterNext, font).Width;
+
+                            if (finalTextSize > maximumTextSize)
+                            {
+                                nextLine = true;
+                            }
+                            else
+                            {
+                                shownText += "-";
+                                hiddenText += "-";
+                                itemIndex++;
+                            }
+                        }
+                        else if (item.Type == TextComponentType.Space)
+                        {
+                            finalTextBeforeNext = finalTextAfterNext;
+                            finalTextAfterNext += " ";
+                            var finalTextSize = g.MeasureString(finalTextAfterNext, font).Width;
+
+                            if (finalTextSize > maximumTextSize)
+                            {
+                                nextLine = true;
+                            }
+                            else
+                            {
+                                shownText += " ";
+                                hiddenText += " ";
+                                itemIndex++;
+                            }
+                        }
+                    }
+                }
+
+                // need to reduce somehow if last line
+                var finalMax = g.MeasureString(finalTextBeforeNext.Trim(), font).Width;
+
+                processedTexts[i] = new ProcessedText
+                {
+                    ShownText = shownText.Trim(),
+                    HiddenText = hiddenText.Trim(),
+                    RemainderFraction = maximumTextSize > 0 ? 1 - finalMax / maximumTextSize : -1,
+                    DisplayRemainder = hasReachedEnd
+                };
+            }
+
+            return Json(new
+            {
+                processedTexts,
+                isTooLong = itemIndex < details.TextComponents.Length
+            });
+        }
+
         public FileResult DownloadImageFile()
         {
             var directory = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
@@ -31,7 +160,7 @@ namespace Lotographia.Controllers
 
             img.Save(ms, ImageFormat.Png);
 
-            return File(ms.ToArray(), "image/png", "anything.png");
+            return File(ms.ToArray(), "image/png", "image.png");
         }
 
         public FileResult DownloadImage()
@@ -40,40 +169,45 @@ namespace Lotographia.Controllers
                 ? "public"
                 : "build";
 
-            ImageDetails details;
+            GameDetails details;
 
             using (var reader = new StreamReader(Request.Body))
             {
                 var body = reader.ReadToEnd();
 
-                details = JObject.Parse(body).ToObject<ImageDetails>();
+                details = JObject.Parse(body).ToObject<GameDetails>();
             }
 
             var img = Image.FromFile($"ClientApp/{directory}/{details.Base}");
 
             var g = Graphics.FromImage(img);
 
-            foreach (var layer in details.Layers)
+            foreach (var experiment in details.Layers)
             {
-                Image layerImg = Image.FromFile($"ClientApp/{directory}/{layer}");
-                g.DrawImage(layerImg, 0, 0);
+                if (!experiment.IsVisible)
+                    continue;
+
+                switch (experiment.LayerType)
+                {
+                    case LayerType.Image:
+                        DrawImage(experiment, img, g, directory);
+                        break;
+                    case LayerType.Phrase:
+                        DrawPhrase(experiment, img, g);
+                        break;
+                }
             }
 
-            foreach (var phrase in details.Phrases)
+            var lotoPhrase = new Layer
             {
-                DrawPhrase(phrase, img, g);
-            }
-
-            var lotoPhrase = new Phrase
-            {
-                BackgroundColor = "#000000",
-                HorizontalAlignment = 0,
-                Scale = "small",
-                Text = "lotographia.com",
-                TextColor = "#FFFFFF",
-                VerticalAlignment = 1,
-                X = 0.025M,
-                Y = 0.975M
+                HorizontalAlignment = 1f,
+                VerticalAlignment = 0f,
+                HorizontalPosition = 0.025f,
+                VerticalPosition = 0.975f,
+                BackgroundColor = details.LotoBackground,
+                FontSize = 9,
+                HiddenText = "lotographia.com",
+                TextColor = details.LotoColour
             };
 
             DrawPhrase(lotoPhrase, img, g);
@@ -87,45 +221,63 @@ namespace Lotographia.Controllers
             return File(ms.ToArray(), "image/jpeg", "image.jpg");
         }
 
-        private void DrawPhrase(Phrase phrase, Image img, Graphics g)
+        private void DrawImage(Layer experiment, Image img, Graphics g, string directory)
         {
-            float xRatio = 34f / 55f;
-            float yRatio = 21f / 20f;
+            // shares this translation stuff with DrawText, could reuse
+            g.TranslateTransform((experiment.HorizontalPosition) * img.Width, (experiment.VerticalPosition) * img.Height);
+            g.RotateTransform(experiment.Rotation);
 
-            if (string.IsNullOrEmpty(phrase.Text))
-                return;
-
-            var fontFamily = new FontFamily(System.Drawing.Text.GenericFontFamilies.Monospace);
-            var scale = GetScale(phrase.Scale);
-            var emSize = img.Width / (100f / scale);
-            var font = new Font(fontFamily, emSize, FontStyle.Bold);
-            var size = new Size((int)(phrase.Text.Length * emSize * xRatio) + (int)(0.5f * emSize * xRatio), (int)(emSize * yRatio));
+            Image layerImg = Image.FromFile($"ClientApp/{directory}/{experiment.FileName}");
 
             var point = new Point(
-                decimal.ToInt32(phrase.X * img.Width) - decimal.ToInt32(size.Width * phrase.HorizontalAlignment),
-                decimal.ToInt32(phrase.Y * img.Height) - decimal.ToInt32(size.Height * phrase.VerticalAlignment));
+                Convert.ToInt32((layerImg.Width * experiment.HorizontalAlignment) - layerImg.Width),
+                Convert.ToInt32((layerImg.Height * experiment.VerticalAlignment) - layerImg.Height));
 
-            var rectangle = new Rectangle(point, size);
-            var stringColor = ColorTranslator.FromHtml(phrase.TextColor);
-            var stringBrush = new SolidBrush(stringColor);
-            var rectangleColor = ColorTranslator.FromHtml(phrase.BackgroundColor);
-            var rectangleBrush = new SolidBrush(rectangleColor);
+            g.DrawImage(layerImg, point);
 
-            g.FillRectangle(rectangleBrush, rectangle);
-            g.DrawString(phrase.Text, font, stringBrush, point);
+            g.RotateTransform(-experiment.Rotation);
+            g.TranslateTransform(-((experiment.HorizontalPosition) * img.Width), -((experiment.VerticalPosition) * img.Height));
         }
 
-        private float GetScale(string scale)
+        private void DrawPhrase(Layer layer, Image img, Graphics g)
         {
-            return scale switch
+            var fontFamily = layer.FontFamily switch
             {
-                "small" => 2f,
-                "medium" => 3f,
-                _ => 3f
+                "SansSerif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.SansSerif),
+                "Serif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.Serif),
+                _ => new FontFamily(System.Drawing.Text.GenericFontFamilies.Monospace),
             };
+
+            var emSize = layer.FontSize;
+            var font = new Font(fontFamily, emSize, FontStyle.Bold);
+            var textSize = g.MeasureString(layer.HiddenText, font);
+            var size = new Size((int)Math.Ceiling(textSize.Width), (int)Math.Ceiling(textSize.Height));
+
+            g.TranslateTransform(layer.HorizontalPosition * img.Width, layer.VerticalPosition * img.Height);
+            g.RotateTransform(layer.Rotation);
+
+            var point = new Point(
+                Convert.ToInt32((size.Width * layer.HorizontalAlignment) - size.Width),
+                Convert.ToInt32((size.Height * layer.VerticalAlignment) - size.Height));
+
+            if (layer.BackgroundColor.ToLower() != "none")
+            {
+                var rectangleColor = ColorTranslator.FromHtml(layer.BackgroundColor);
+                var rectangleBrush = new SolidBrush(rectangleColor);
+                var rectangle = new Rectangle(point, size);
+                g.FillRectangle(rectangleBrush, rectangle);
+            }
+
+            var stringColor = ColorTranslator.FromHtml(layer.TextColor);
+            var stringBrush = new SolidBrush(stringColor);
+
+            g.DrawString(layer.HiddenText, font, stringBrush, point);
+
+            g.RotateTransform(-layer.Rotation);
+            g.TranslateTransform(-(layer.HorizontalPosition * img.Width), -(layer.VerticalPosition * img.Height));
         }
 
-        // borrowed from internet
+        // borrowed from innernet
 
         /// <summary>
         /// Resize the image to the specified width and height.
@@ -149,15 +301,21 @@ namespace Lotographia.Controllers
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-                using (var wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-                }
+                using var wrapMode = new ImageAttributes();
+                wrapMode.SetWrapMode(WrapMode.TileFlipXY);
+                graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
             }
 
             return destImage;
         }
+    }
+
+    public class ProcessedText
+    {
+        public string ShownText { get; set; }
+        public string HiddenText { get; set; }
+        public float RemainderFraction { get; set; }
+        public bool DisplayRemainder { get; set; }
     }
 
     public class ImageFileDetails
@@ -165,24 +323,68 @@ namespace Lotographia.Controllers
         public string FileName { get; set; }
     }
 
-    public class ImageDetails
+    public class GetProcessedTextsBody
+    {
+        public TextComponent[] TextComponents { get; set; }
+        public Line[] Lines { get; set; }
+    }
+
+    public class Line
+    {
+        public int MaximumLength { get; set; }
+        public string FontFamily { get; set; }
+    }
+
+    public class TextComponent
+    {
+        public TextComponentType Type { get; set; }
+        public VariantText VariantText { get; set; }
+    }
+
+    public class VariantText
+    {
+        public string ShownText { get; set; }
+        public string HiddenText { get; set; }
+    }
+
+    public enum TextComponentType
+    {
+        Hyphen,
+        Return,
+        Space,
+        Word
+    }
+
+    public class GameDetails
     {
         public string Base { get; set; }
         public int Height { get; set; }
-        public string[] Layers { get; set; }
-        public Phrase[] Phrases { get; set; }
+        public Layer[] Layers { get; set; }
         public int Width { get; set; }
+        public string LotoColour { get; set; }
+        public string LotoBackground { get; set; }
     }
 
-    public class Phrase
+    public enum LayerType
     {
+        Phrase,
+        Image
+    }
+
+    public class Layer
+    {
+        public LayerType LayerType { get; set; }
+        public bool IsVisible { get; set; }
+        public string FileName { get; set; }
+        public string HiddenText { get; set; }
+        public float HorizontalPosition { get; set; } = 0;
+        public float VerticalPosition { get; set; } = 0;
+        public float HorizontalAlignment { get; set; } = 1;
+        public float VerticalAlignment { get; set; } = 1;
+        public float Rotation { get; set; } = 0;
         public string BackgroundColor { get; set; }
-        public decimal HorizontalAlignment { get; set; }
-        public string Scale { get; set; }
-        public string Text { get; set; }
+        public string FontFamily { get; set; }
+        public int FontSize { get; set; }
         public string TextColor { get; set; }
-        public decimal VerticalAlignment { get; set; }
-        public decimal X { get; set; }
-        public decimal Y { get; set; }
     }
 }

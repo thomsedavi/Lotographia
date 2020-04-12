@@ -1,16 +1,14 @@
 import * as React from "react";
-import { CheckboxOptionsComponent, CheckboxOptionsFunction } from "../components/CheckboxOptionsComponent";
-import { DisplayComponent } from "../components/DisplayComponent";
-import { InfoComponent } from "../components/InfoComponent";
-import { ImageFloat } from "../components/Option";
-import { RadioOptionsComponent } from "../components/RadioOptionsComponent";
-import { CharacterProps, TextAreaProps, TextProps, isTextArea, TextComponent, convertText } from "../components/TextComponent";
-import { getFileImageObjectURL, getSingleImageObjectURL } from "../utils/Utils";
-
-interface LoadedImage {
-  src: string;
-  objectUrl?: string;
-}
+import { getComponent } from "../components/ComponentContainer";
+import { selectCheckboxOption, CheckboxComponentProps } from "../components/CheckboxComponent";
+import { DisplayComponentProps } from "../components/DisplayComponent";
+import { InfoComponentProps } from "../components/InfoComponent";
+import { RadioComponentProps } from "../components/RadioComponent";
+import { TextComponentProps, mapToTextComponents } from "../components/TextComponent";
+import { TextType, FontFamily, LayerType, ImageFloat } from "../common/Enums";
+import { SubstituteTexts, GameDetails, ProcessedTextsState, TextComponent, TextElement, RequiredText, GetProcessedTextsBody, LoadedImage, Layer, ProcessedText, Option } from "../common/Interfaces";
+import { getFileImageObjectURL, getProcessedImageObjectURL, getProcessedTexts } from "../common/Utils";
+import { StatusLoading, StatusReady, StatusChecking, StatusTooLong, StatusGood } from '../common/Assets';
 
 enum Option1 {
   Octopus = "octopus",
@@ -22,7 +20,7 @@ enum Option2 {
   Lizard = "robot"
 }
 
-enum Options {
+enum Option3 {
   Acid = "acid",
   Electricity = "electricity",
   Lava = "lava",
@@ -37,23 +35,77 @@ enum Images {
 }
 
 interface CapitalPartyState {
-  images: { [id: string]: LoadedImage };
-  usedRandomTexts: number[];
-  option1?: Option1;
-  option2?: Option2;
-  selectedIds: string[];
-  texts: (TextAreaProps | TextProps)[];
-  stage: number;
-  previewURL?: string;
-  loadedImages: number;
-  pageLoaded: boolean;
-  imageLoaded: boolean;
+  images: { [id: string]: LoadedImage },
+  usedRandomTexts: number[],
+  options1: Option[],
+  options2: Option[],
+  options3: Option[],
+  textElements: TextElement[],
+  stage: number,
+  previewURL?: string,
+  loadedImages: number,
+  pageLoaded: boolean,
+  imageLoaded: boolean,
+  waitingToSubmit: boolean,
+  waitingForReturn: boolean,
+  layers: Layer[],
+  isTooLong: boolean
 }
+
+const substituteTexts: SubstituteTexts[] = [
+  {
+    displayedText: "children",
+    isRequired: true,
+    variantTexts: [
+      {
+        shownText: "children",
+        hiddenText: "monsters"
+      },
+      {
+        shownText: "child",
+        hiddenText: "monster"
+      }
+    ]
+  },
+  {
+    displayedText: "dessert",
+    isRequired: true,
+    variantTexts: [
+      {
+        shownText: "desserts",
+        hiddenText: "Government"
+      },
+      {
+        shownText: "dessert",
+        hiddenText: "Beehive"
+      }
+    ]
+  }
+];
+
+const defaultTextElements: TextElement[] = [
+  {
+    type: TextType.Fixed,
+    text: "The two children"
+  },
+  {
+    type: TextType.Custom,
+    placeholder: "(your text here)"
+  },
+  {
+    type: TextType.Fixed,
+    text: "the dessert"
+  },
+  {
+    type: TextType.Custom,
+    placeholder: "(your other text here)"
+  }
+];
 
 export class CapitalParty extends React.Component<any, CapitalPartyState> {
   title: string = "Capital Party";
-  textLengths: number[] = [25, 21, 20, 18, 18, 18, 18];
   requiredOptions: number = 2;
+  timeout?: number;
 
   height: number = 600;
   width: number = 900;
@@ -91,33 +143,185 @@ export class CapitalParty extends React.Component<any, CapitalPartyState> {
         [Images.Octopuses]: { src: "CapitalParty/octopuses.png" },
         [Images.Robots]: { src: "CapitalParty/robots.png" }
       },
-      selectedIds: [],
-      stage: 0,
-      texts: [
-        {
-          originalValue: "The two children",
-          updatedValue: "The two monsters"
-        },
-        {
-          customValue: "",
-          onChange: (text: string) => this.updateText(1, text),
-          placeholder: "(your text here)"
-        },
-        {
-          originalValue: "the dessert",
-          updatedValue: "the Beehive"
-        },
-        {
-          onChange: (text: string) => this.updateText(3, text),
-          placeholder: "(your other text here)",
-          customValue: ""
-        }
+      options1: [
+        { id: Option1.Octopus, isSelected: false },
+        { id: Option1.Robot, isSelected: false }
       ],
+      options2: [
+        { id: Option2.Alien, isSelected: false },
+        { id: Option2.Lizard, isSelected: false }
+      ],
+      options3: [
+        { id: Option3.Acid, isSelected: false },
+        { id: Option3.Electricity, isSelected: false },
+        { id: Option3.Lava, isSelected: false },
+        { id: Option3.Terrible, isSelected: false }
+      ],
+      stage: 0,
+      textElements: [...defaultTextElements],
       usedRandomTexts: [0, 1, 2],
       loadedImages: 0,
       pageLoaded: false,
-      imageLoaded: false
+      imageLoaded: false,
+      waitingToSubmit: false,
+      waitingForReturn: false,
+      isTooLong: false,
+      layers: [
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/1_electricity.png",
+          requiredOption: Option3.Electricity
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/2_terrible.png",
+          requiredOption: Option3.Terrible
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/robot.png",
+          requiredOption: Option1.Robot
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/octopus.png",
+          requiredOption: Option1.Octopus
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/lizard.png",
+          requiredOption: Option2.Lizard
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/alien.png",
+          requiredOption: Option2.Alien
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/3_acid.png",
+          requiredOption: Option3.Acid
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/4_terrible.png",
+          requiredOption: Option3.Terrible
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/5_lava.png",
+          requiredOption: Option3.Lava
+        },
+        {
+          layerType: LayerType.Image,
+          isVisible: false,
+          fileName: "CapitalParty/6_terrible.png",
+          requiredOption: Option3.Terrible
+        },
+        {
+          layerType: LayerType.Phrase,
+          isVisible: false,
+          backgroundColor: "#000",
+          horizontalPosition: 0.8,
+          verticalPosition: 0.047,
+          horizontalAlignment: 0.53,
+          verticalAlignment: 0.5,
+          fontSize: 9,
+          textColor: "#FFF",
+          fontFamily: FontFamily.Monospace,
+          maximumLength: 25
+        },
+        {
+          layerType: LayerType.Phrase,
+          isVisible: false,
+          backgroundColor: "#000",
+          horizontalPosition: 0.86,
+          verticalPosition: 0.1,
+          horizontalAlignment: 0.38,
+          verticalAlignment: 0.5,
+          fontSize: 9,
+          textColor: "#FFF",
+          fontFamily: FontFamily.Monospace,
+          maximumLength: 21
+        },
+        {
+          layerType: LayerType.Phrase,
+          isVisible: false,
+          backgroundColor: "#000",
+          horizontalPosition: 0.83,
+          verticalPosition: 0.149,
+          horizontalAlignment: 0.58,
+          verticalAlignment: 0.5,
+          fontSize: 9,
+          textColor: "#FFF",
+          fontFamily: FontFamily.Monospace,
+          maximumLength: 20
+        },
+        {
+          layerType: LayerType.Phrase,
+          isVisible: false,
+          backgroundColor: "#000",
+          horizontalPosition: 0.87,
+          verticalPosition: 0.202,
+          horizontalAlignment: 0.41,
+          verticalAlignment: 0.5,
+          fontSize: 9,
+          textColor: "#FFF",
+          fontFamily: FontFamily.Monospace,
+          maximumLength: 18
+        },
+        {
+          layerType: LayerType.Phrase,
+          isVisible: false,
+          backgroundColor: "#000",
+          horizontalPosition: 0.83,
+          verticalPosition: 0.255,
+          horizontalAlignment: 0.66,
+          verticalAlignment: 0.5,
+          fontSize: 9,
+          textColor: "#FFF",
+          fontFamily: FontFamily.Monospace,
+          maximumLength: 18
+        },
+        {
+          layerType: LayerType.Phrase,
+          isVisible: false,
+          backgroundColor: "#000",
+          horizontalPosition: 0.88,
+          verticalPosition: 0.312,
+          horizontalAlignment: 0.41,
+          verticalAlignment: 0.5,
+          fontSize: 9,
+          textColor: "#FFF",
+          fontFamily: FontFamily.Monospace,
+          maximumLength: 18
+        },
+        {
+          layerType: LayerType.Phrase,
+          isVisible: false,
+          backgroundColor: "#000",
+          horizontalPosition: 0.85,
+          verticalPosition: 0.365,
+          horizontalAlignment: 0.57,
+          verticalAlignment: 0.5,
+          fontSize: 9,
+          textColor: "#FFF",
+          fontFamily: FontFamily.Monospace,
+          maximumLength: 18
+        }
+      ]
     };
+
+    this.processTexts();
   }
 
   // recursively load images, if they all load at once
@@ -155,56 +359,134 @@ export class CapitalParty extends React.Component<any, CapitalPartyState> {
         pageLoaded: true
       });
     }, 3000);
-
+  
     const ids = Object.keys(this.state.images);
     this.loadImages(ids);
   }
 
-  componentWillUnmount = () => {
-    for (var id in this.state.images) {
-      const image = this.state.images[id];
-
-      image.objectUrl !== undefined &&
-        URL.revokeObjectURL(image.objectUrl);
-    }
-
-    this.state.previewURL != undefined &&
-      URL.revokeObjectURL(this.state.previewURL);
-  }
-
   selectOption1 = (id: Option1) => {
+    const options1 = this.state.options1;
+    options1.forEach(o => o.isSelected = false);
+    options1.filter(o => o.id === id)[0].isSelected = true;
+
+    const layers = this.state.layers;
+
+    options1.forEach((option: Option) => {
+      layers.filter(l => l.requiredOption === option.id).forEach(l => l.isVisible = option.isSelected);
+    })
+
     this.setState({
-      option1: id
+      options1: options1,
+      layers: layers
     })
   }
 
   selectOption2 = (id: Option2) => {
+    const options2 = this.state.options2;
+    options2.forEach(o => o.isSelected = false);
+    options2.filter(o => o.id === id)[0].isSelected = true;
+
+    const layers = this.state.layers;
+
+    options2.forEach((option: Option) => {
+      layers.filter(l => l.requiredOption === option.id).forEach(l => l.isVisible = option.isSelected);
+    })
+
     this.setState({
-      option2: id
+      options2: options2,
+      layers: layers
     });
   }
 
   selectCheckbox = (id: string) => {
-    CheckboxOptionsFunction(this.state.selectedIds, id, this.requiredOptions, (selectedIds: string[]) => {
+    selectCheckboxOption(this.state.options3, id, this.requiredOptions, (options3: Option[]) => {
+      const layers = this.state.layers;
+
+      options3.forEach((option: Option) => {
+        layers.filter(l => l.requiredOption === option.id).forEach(l => l.isVisible = option.isSelected);
+      })
+
       this.setState({
-        selectedIds: selectedIds
+        options3: options3,
+        layers: layers
       })
     });
   }
 
-  updateText = (index: number, text: string) => {
-    const texts = this.state.texts;
+  updateText = (value: string, index: number) => {
+    const textElements = this.state.textElements;
 
-    const textArea = texts[index];
-
-    if (isTextArea(textArea))
-      textArea.customValue = text;
-
-    texts[index] = textArea;
+    textElements[index].text = value;
 
     this.setState({
-      texts: texts
+      textElements: textElements,
+      waitingToSubmit: true
     });
+
+    clearTimeout(this.timeout);
+
+    this.timeout = setTimeout(() => {
+      this.processTexts()
+    }, 250);
+  }
+
+  processTexts = () => {
+    if (this.state.waitingForReturn)
+      return;
+
+    this.setState({
+      waitingForReturn: true,
+      waitingToSubmit: false
+    });
+
+    const textComponentState: {
+      textComponents: TextComponent[],
+      requiredTexts: RequiredText[]
+    } = mapToTextComponents(this.state.textElements, substituteTexts);
+
+    const getProcessedTextsBody: GetProcessedTextsBody = {
+      textComponents: textComponentState.textComponents,
+      lines: this.state.layers.map(l => {
+        return {
+          maximumLength: l.maximumLength || 0,
+          fontFamily: l.fontFamily || FontFamily.Monospace
+        }
+      })
+    }
+
+    const callback = (json: ProcessedTextsState) => {
+      this.setState({
+        waitingForReturn: false
+      });
+
+      if (this.state.waitingToSubmit) {
+        this.processTexts()
+      } else {
+        const layers = this.state.layers;
+
+        json.processedTexts.forEach((processedText: ProcessedText, index: number) => {
+          if (processedText.remainderFraction !== -1 && processedText.remainderFraction <= 1) {
+            const layer = layers[index];
+
+            // can use clever code for this mapping?
+            layer.isVisible = processedText.shownText.length > 0;
+            layer.shownText = processedText.shownText;
+            layer.hiddenText = processedText.hiddenText;
+            layer.displayRemainder = processedText.displayRemainder;
+            layer.remainderFraction = processedText.remainderFraction;
+
+            layers[index] = layer;
+          }
+        });
+
+        this.setState({
+          isTooLong: json.isTooLong,
+          layers: layers
+        });
+      }
+    }
+
+    getProcessedTexts(getProcessedTextsBody, callback);
   }
 
   autofill = () => {
@@ -215,21 +497,15 @@ export class CapitalParty extends React.Component<any, CapitalPartyState> {
     while (usedRandomTexts.indexOf(randInt) >= 0) {
       randInt = Math.floor(Math.random() * this.randomTexts.length);
     }
-
+  
     const phrase = this.randomTexts[randInt];
     
     usedRandomTexts.splice(0, 1);
     usedRandomTexts.push(randInt);
-
+  
     phrase.forEach((p: [number, string]) => {
-      this.updateText(p[0], p[1]);
+      this.updateText(p[1], p[0]);
     });
-  }
-
-  next = () => {
-    this.setState((state) => ({
-      stage: state.stage + 1
-    }));
   }
 
   previous = () => {
@@ -238,389 +514,309 @@ export class CapitalParty extends React.Component<any, CapitalPartyState> {
     }));
   }
 
+  next = () => {
+    this.setState((state) => ({
+      stage: state.stage + 1
+    }));
+  }
+
   getBody = () => {
-    const convertedText: { convertedTexts: CharacterProps[][]; tooLong: boolean; } = convertText(this.state.texts, this.textLengths, false);
-
-    var layers: string[] = [];
-
-    if (this.state.selectedIds.indexOf(Options.Electricity) >= 0)
-      layers.push("CapitalParty/1_electricity.png");
-
-    if (this.state.selectedIds.indexOf(Options.Terrible) >= 0)
-      layers.push("CapitalParty/2_terrible.png");
-
-    if (this.state.option1 === Option1.Robot)
-      layers.push("CapitalParty/robot.png");
-
-    if (this.state.option1 === Option1.Octopus)
-      layers.push("CapitalParty/octopus.png");
-
-    if (this.state.option2 === Option2.Lizard)
-      layers.push("CapitalParty/lizard.png");
-
-    if (this.state.option2 === Option2.Alien)
-      layers.push("CapitalParty/alien.png");
-
-    if (this.state.selectedIds.indexOf(Options.Acid) >= 0)
-      layers.push("CapitalParty/3_acid.png");
-
-    if (this.state.selectedIds.indexOf(Options.Terrible) >= 0)
-      layers.push("CapitalParty/4_terrible.png");
-
-    if (this.state.selectedIds.indexOf(Options.Lava) >= 0)
-      layers.push("CapitalParty/5_lava.png");
-
-    if (this.state.selectedIds.indexOf(Options.Terrible) >= 0)
-      layers.push("CapitalParty/6_terrible.png");
-
-    return {
+    const imageDetails: GameDetails = {
       base: "CapitalParty/background.png",
+      layers: this.state.layers,
       height: this.height,
-      layers: layers,
-      phrases: [
-        {
-          backgroundColor: "#000000",
-          x: 0.965,
-          y: 0.055,
-          horizontalAlignment: 1,
-          verticalAlignment: 0,
-          scale: "small",
-          text: convertedText.convertedTexts[0].map(t => t.character).join("").trim(),
-          textColor: "#FFFFFF"
-        },
-        {
-          backgroundColor: "#000000",
-          x: 0.96,
-          y: 0.1,
-          horizontalAlignment: 1,
-          verticalAlignment: 0,
-          scale: "small",
-          text: convertedText.convertedTexts[1].map(t => t.character).join("").trim(),
-          textColor: "#FFFFFF"
-        },
-        {
-          backgroundColor: "#000000",
-          x: 0.97,
-          y: 0.155,
-          horizontalAlignment: 1,
-          verticalAlignment: 0,
-          scale: "small",
-          text: convertedText.convertedTexts[2].map(t => t.character).join("").trim(),
-          textColor: "#FFFFFF"
-        },
-        {
-          backgroundColor: "#000000",
-          x: 0.96,
-          y: 0.2,
-          horizontalAlignment: 1,
-          verticalAlignment: 0,
-          scale: "small",
-          text: convertedText.convertedTexts[3].map(t => t.character).join("").trim(),
-          textColor: "#FFFFFF"
-        },
-        {
-          backgroundColor: "#000000",
-          x: 0.965,
-          y: 0.25,
-          horizontalAlignment: 1,
-          verticalAlignment: 0,
-          scale: "small",
-          text: convertedText.convertedTexts[4].map(t => t.character).join("").trim(),
-          textColor: "#FFFFFF"
-        },
-        {
-          backgroundColor: "#000000",
-          x: 0.97,
-          y: 0.305,
-          horizontalAlignment: 1,
-          verticalAlignment: 0,
-          scale: "small",
-          text: convertedText.convertedTexts[5].map(t => t.character).join("").trim(),
-          textColor: "#FFFFFF"
-        },
-        {
-          backgroundColor: "#000000",
-          x: 0.965,
-          y: 0.355,
-          horizontalAlignment: 1,
-          verticalAlignment: 0,
-          scale: "small",
-          text: convertedText.convertedTexts[6].map(t => t.character).join("").trim(),
-          textColor: "#FFFFFF"
-        }
-      ],
-      width: this.width
+      width: this.width,
+      lotoColour: "#000",
+      lotoBackground: "#fff",
+      substituteTexts: substituteTexts
     }
+
+    return imageDetails;
   }
 
   render() {
-    const info1Component = <InfoComponent key="info1Component"
-      buttons={[
-        {
-          class: "navigation",
-          isActive: this.state.loadedImages === 4 && this.state.pageLoaded,
-          name: "Next",
-          onClick: this.next
+    let componentProps: InfoComponentProps | RadioComponentProps | CheckboxComponentProps | TextComponentProps | DisplayComponentProps;
+
+    const selectedId1 = this.state.options1.filter(o => o.isSelected).length > 0
+      ? this.state.options1.filter(o => o.isSelected)[0].id : undefined;
+    const selectedId2 = this.state.options2.filter(o => o.isSelected).length > 0
+      ? this.state.options2.filter(o => o.isSelected)[0].id : undefined;
+
+    switch (this.state.stage) {
+      case 0:
+        componentProps = {
+          navigationButtons: [{
+            class: "navigation",
+            isActive: this.state.loadedImages === 4 && this.state.pageLoaded,
+            name: "Next",
+            onClick: this.next
+          }],
+          loadingState: this.state.loadedImages < 4 || !this.state.pageLoaded ? StatusLoading : StatusReady,
+          contents: [
+            "It is a lovely day in the capital city of Aotearoa and you are going to have a party",
+            "Oh no! Despite this being the 21st Century, somehow no one has a device that they can take photos on",
+            "Never mind, if you answer a few questions I should be able to piece something together for you",
+            "(btw: the image at the end of this game is probably better viewed on desktop than mobile)"
+            ],
+          infoTitle: this.title
+        };
+        break;
+      case 1:
+        componentProps = {
+          navigationButtons: [
+            {
+              class: "navigation",
+              isActive: true,
+              name: "Previous",
+              onClick: this.previous
+            },
+            {
+              class: "navigation",
+              isActive: selectedId1 !== undefined,
+              name: "Next",
+              onClick: this.next
+            }
+          ],
+          contents: ["Your party is going to be super memorable. Pick a theme!"],
+          selectOptions: [
+            {
+              description: "Probably safe, I'm sure they follow Chekhov's Laws of Robotics",
+              float: ImageFloat.Left,
+              id: Option1.Robot,
+              name: "Robots",
+              objectUrl: this.state.images[Images.Robots].objectUrl
+            },
+            {
+              description: "Did you know that the average octopus has 2.4 pet goldfish and 1 television?",
+              float: ImageFloat.Right,
+              id: Option1.Octopus,
+              name: "Octopuses",
+              objectUrl: this.state.images[Images.Octopuses].objectUrl
+            }
+          ],
+          onClick: this.selectOption1,
+          selectedId: selectedId1,
+          radioTitle: this.title
         }
-      ]}
-      isLoading={this.state.loadedImages < 4 || !this.state.pageLoaded}
-      content={[
-        "It is a lovely day in the capital city of Aotearoa and you are going to have a party",
-        "Oh no! Despite this being the 21st Century, somehow no one has a device that they can take photos on",
-        "Never mind, if you answer a few questions I should be able to piece something together for you",
-        "(btw: the image at the end of this game is probably better viewed on desktop than mobile)"
-      ]}
-    />;
-
-    const radio1Component = <RadioOptionsComponent key="radio1Component"
-      buttons={[
-        {
-          class: "navigation",
-          isActive: true,
-          name: "Previous",
-          onClick: this.previous
-        },
-        {
-          class: "navigation",
-          isActive: this.state.option1 !== undefined,
-          name: "Next",
-          onClick: this.next
-        }
-      ]}
-      context="Your party is going to be super memorable. Pick a theme!"
-      options={
-        [
-          {
-            description: "Probably safe, I'm sure they follow Chekhov's Laws of Robotics",
-            float: ImageFloat.Left,
-            id: Option1.Robot,
-            name: "Robots",
-            objectUrl: this.state.images[Images.Robots].objectUrl
-          },
-          {
-            description: "Did you know that the average octopus has 2.4 pet goldfish and 1 television?",
-            float: ImageFloat.Right,
-            id: Option1.Octopus,
-            name: "Octopuses",
-            objectUrl: this.state.images[Images.Octopuses].objectUrl
-          }
-        ]
-      }
-      onClick={this.selectOption1}
-      selectedId={this.state.option1}
-    />;
-
-    const radio2Component = <RadioOptionsComponent key="radio2Component"
-      buttons={[
-        {
-          class: "navigation",
-          isActive: true,
-          name: "Previous",
-          onClick: this.previous
-        },
-        {
-          class: "navigation",
-          isActive: this.state.option2 !== undefined,
-          name: "Next",
-          onClick: this.next
-        }
-      ]}
-      context={`${this.state.option1 == Option1.Robot ? "Robots" : "Octopuses"}, eh? This is fun, let"s add another theme`}
-      options={
-        [
-          {
-            description: "Either humans with bumpy foreheads and pointy ears, or rejected Muppet concepts",
-            float: ImageFloat.Right,
-            id: Option2.Alien,
-            name: "Aliens",
-            objectUrl: this.state.images[Images.Aliens].objectUrl
-          },
-          {
-            description: "As a child of the '80s, dinosaurs will always be more like giant lizards to me than lizardy birds",
-            float: ImageFloat.Left,
-            id: Option2.Lizard,
-            name: "Lizards",
-            objectUrl: this.state.images[Images.Lizards].objectUrl
-          }
-        ]
-      }
-      onClick={this.selectOption2}
-      selectedId={this.state.option2}
-    />;
-
-    const checkboxComponent = <CheckboxOptionsComponent key="checkboxComponent"
-      buttons={[
-        {
-          class: "navigation",
-          isActive: true,
-          name: "Previous",
-          onClick: this.previous
-        },
-        {
-          class: "navigation",
-          isActive: this.state.selectedIds.length === 2,
-          name: "Next",
-          onClick: this.next
-        }
-      ]}
-      maximum={2}
-      context="I forgot to mention, this is a kids party. You are 12, or 12-like. Choose a couple of games to play"
-      onClick={this.selectCheckbox}
-      options={
-        [
-          { description: "Don't touch the floor! A classic game where the floor is literally lava", id: Options.Lava, name: "The Floor Is Lava" },
-          { description: "Don't touch the walls! A variant of the original game intended to discourage loafing", id: Options.Acid, name: "The Walls Are Acid" },
-          { description: "Don't touch the ceiling! An intenionally easy game for beginners", id: Options.Electricity, name: "The Ceiling Is Electrity" },
-          { description: "Don't touch anything! A metaphor for life", id: Options.Terrible, name: "Everything Is Terrible" }
-        ]
-      }
-      selectedIds={this.state.selectedIds}
-    />
-
-    const convertedText: { convertedTexts: CharacterProps[][], tooLong: boolean } = convertText(this.state.texts, this.textLengths, true);
-
-    const textComponent = <TextComponent key="textComponent"
-      buttons={[
-        {
-          class: "navigation",
-          isActive: true,
-          name: "Previous",
-          onClick: this.previous
-        },
-        {
-          class: "navigation",
-          isActive: !convertedText.tooLong,
-          name: "Next",
-          onClick: () => {
-            setTimeout(() => {
-              this.setState({
-                imageLoaded: true
-              });
-            }, 3000);
-
-            const callback = (objectURL: string) => {
-              this.setState({
-                previewURL: objectURL
-              });
+        break;
+      case 2:
+        componentProps = {
+          navigationButtons: [
+            {
+              class: "navigation",
+              isActive: true,
+              name: "Previous",
+              onClick: this.previous
+            },
+            {
+              class: "navigation",
+              isActive: selectedId2 !== undefined,
+              name: "Next",
+              onClick: this.next
             }
 
-            const body = JSON.stringify(
-              this.getBody()
-            )
+          ],
+          contents: [`${selectedId1 == Option1.Robot ? "Robots" : "Octopuses"}, eh? This is fun, let"s add another theme`],
+          selectOptions: [
+            {
+              description: "Either humans with bumpy foreheads and pointy ears, or rejected Muppet concepts",
+              float: ImageFloat.Right,
+              id: Option2.Alien,
+              name: "Aliens",
+              objectUrl: this.state.images[Images.Aliens].objectUrl
+            },
+            {
+              description: "As a child of the '80s, dinosaurs will always be more like giant lizards to me than lizardy birds",
+              float: ImageFloat.Left,
+              id: Option2.Lizard,
+              name: "Lizards",
+              objectUrl: this.state.images[Images.Lizards].objectUrl
+            }
+          ],
+          onClick: this.selectOption2,
+          selectedId: selectedId2,
+          radioTitle: this.title
+        };
+        break;
+      case 3:
+        componentProps = {
+          navigationButtons: [
+            {
+              class: "navigation",
+              isActive: true,
+              name: "Previous",
+              onClick: this.previous
+            },
+            {
+              class: "navigation",
+              isActive: this.state.options3.filter(id => id.isSelected).length === 2,
+              name: "Next",
+              onClick: this.next
+            }
+          ],
+          maximum: 2,
+          contents: ["I forgot to mention, this is a kids party. You are 12, or 12-like. Choose a couple of games to play"],
+          onClick: this.selectCheckbox,
+          selectOptions: [
+            { description: "Don't touch the floor! A classic game where the floor is literally lava", id: Option3.Lava, name: "The Floor Is Lava" },
+            { description: "Don't touch the walls! A variant of the original game intended to discourage loafing", id: Option3.Acid, name: "The Walls Are Acid" },
+            { description: "Don't touch the ceiling! An intenionally easy game for beginners", id: Option3.Electricity, name: "The Ceiling Is Electrity" },
+            { description: "Don't touch anything! A metaphor for life", id: Option3.Terrible, name: "Everything Is Terrible" }
+          ],
+          options: this.state.options3,
+          checkboxTitle: this.title
+        };
+        break;
+      case 4:
+        componentProps = {
+          actionButtons: [
+            {
+              class: "action",
+              isActive: true,
+              name: "Random Autofill",
+              onClick: this.autofill
+            }
+          ],
+          navigationButtons: [
+            {
+              class: "navigation",
+              isActive: true,
+              name: "Previous",
+              onClick: this.previous
+            },
+            {
+              class: "navigation",
+              isActive: !this.state.waitingToSubmit && !this.state.waitingForReturn && !this.state.isTooLong,
+              name: "Next",
+              onClick: () => {
+                setTimeout(() => {
+                  this.setState({
+                    imageLoaded: true
+                  });
+                }, 3000);
 
-            getSingleImageObjectURL(body, callback);
-
-            this.next();
-          }
-        }
-      ]}
-      autofill={this.autofill}
-      context="There is one piece of dessert left and two children who desire it. Do they share it? Do they fight over it? YOU get to fill in the details. (make sure it fits into the preview below)"
-      lineLengths={this.textLengths}
-      texts={this.state.texts}
-    />;
-
-    const info2Component = <InfoComponent key="info2Component"
-      buttons={[
-        {
-          class: "navigation",
-          isActive: true,
-          name: "Previous",
-          onClick: () => {
-            this.state.previewURL !== undefined &&
-              URL.revokeObjectURL(this.state.previewURL);
-
-            this.setState({
-              previewURL: undefined,
-              imageLoaded: false
-            });
-
-            this.previous();
-          }
-        },
-        {
-          class: "navigation",
-          isActive: this.state.previewURL !== undefined && this.state.imageLoaded,
-          name: "Next",
-          onClick: this.next
-        }
-      ]}
-      isLoading={this.state.previewURL === undefined || !this.state.imageLoaded}
-      content={[
-        "Oh no! My mistake, you weren't having a party after all",
-        `${this.state.option1 === Option1.Robot ? "A robot" : "An octopus"}, ${this.state.option2 === Option2.Alien ? "an alien" : "a lizard"}...`,
-        "What was this all about, then?"
-      ]}
-    />;
-
-    const displayComponent = <DisplayComponent key="displayComponent"
-      buttons={[
-        {
-          class: "navigation",
-          isActive: true,
-          name: "Previous",
-          onClick: this.previous
-        },
-        {
-          class: "navigation",
-          isActive: true,
-          name: "Reset",
-          onClick: () => {
-            this.state.previewURL !== undefined &&
-              URL.revokeObjectURL(this.state.previewURL);
-
-            this.setState({
-              imageLoaded: false,
-              stage: 0,
-              option1: undefined,
-              option2: undefined,
-              previewURL: undefined,
-              selectedIds: [],
-              texts: [
-                {
-                  originalValue: "The two children",
-                  updatedValue: "The two monsters"
-                },
-                {
-                  customValue: "",
-                  onChange: (text: string) => this.updateText(1, text),
-                  placeholder: "(your text here)"
-                },
-                {
-                  originalValue: "the dessert",
-                  updatedValue: "the Beehive"
-                },
-                {
-                  onChange: (text: string) => this.updateText(3, text),
-                  placeholder: "(your other text here)",
-                  customValue: ""
+                const callback = (objectURL: string) => {
+                  this.setState({
+                    previewURL: objectURL
+                  });
                 }
-              ]
-            })
-          }
-        }
-      ]}
-      previewURL={this.state.previewURL}
-    />;
 
-    const stages = [
-      info1Component,
-      radio1Component,
-      radio2Component,
-      checkboxComponent,
-      textComponent,
-      info2Component,
-      displayComponent
-    ];
+                const body = JSON.stringify(
+                  this.getBody()
+                )
 
-    return (
-      <div>
-        <div className="component">
-          <div className="title">{this.title}</div>
-        </div>
+                getProcessedImageObjectURL(body, callback);
 
-        {stages[this.state.stage]}
-      </div>
-    );
+                this.next();
+              }
+            }
+          ],
+          contents: ["There is one piece of dessert left and two children who desire it. Do they share it? Do they fight over it? YOU get to fill in the details. (make sure it fits into the preview below)"],
+          textTitle: this.title,
+          textElements: this.state.textElements,
+          onChange: this.updateText,
+          layers: this.state.layers,
+          isTooLong: this.state.isTooLong,
+          loadingState: this.state.waitingToSubmit || this.state.waitingForReturn ? StatusChecking : (this.state.isTooLong ? StatusTooLong : StatusGood)
+        };
+        break;
+      case 5:
+        componentProps = {
+          navigationButtons: [
+            {
+              class: "navigation",
+              isActive: true,
+              name: "Previous",
+              onClick: () => {
+                this.state.previewURL !== undefined &&
+                  URL.revokeObjectURL(this.state.previewURL);
+
+                this.setState({
+                  previewURL: undefined,
+                  imageLoaded: false
+                });
+
+                this.previous();
+              }
+            },
+            {
+              class: "navigation",
+              isActive: this.state.previewURL !== undefined && this.state.imageLoaded,
+              name: "Next",
+              onClick: this.next
+            }
+          ],
+          loadingState: this.state.previewURL === undefined || !this.state.imageLoaded ? StatusLoading : StatusReady,
+          contents: [
+            "Oh no! My mistake, you weren't having a party after all",
+            `${selectedId1 === Option1.Robot ? "A robot" : "An octopus"}, ${selectedId2 === Option2.Alien ? "an alien" : "a lizard"}...`,
+            "What was this all about, then?"
+          ],
+          infoTitle: this.title
+        };
+        break;
+      case 6:
+        componentProps = {
+          navigationButtons: [
+            {
+              class: "navigation",
+              isActive: true,
+              name: "Previous",
+              onClick: this.previous
+            },
+            {
+              class: "navigation",
+              isActive: true,
+              name: "Reset",
+              onClick: () => {
+                this.state.previewURL !== undefined &&
+                  URL.revokeObjectURL(this.state.previewURL);
+
+                const textElements = this.state.textElements;
+
+                textElements.forEach(textElement => {
+                  if (textElement.type == TextType.Custom)
+                    textElement.text = "";
+                });
+
+                this.setState({
+                  imageLoaded: false,
+                  stage: 0,
+                  previewURL: undefined,
+                  options1: [
+                    { id: Option1.Octopus, isSelected: false },
+                    { id: Option1.Robot, isSelected: false }
+                  ],
+                  options2: [
+                    { id: Option2.Alien, isSelected: false },
+                    { id: Option2.Lizard, isSelected: false }
+                  ],
+                  options3: [
+                    { id: Option3.Acid, isSelected: false },
+                    { id: Option3.Electricity, isSelected: false },
+                    { id: Option3.Lava, isSelected: false },
+                    { id: Option3.Terrible, isSelected: false }
+                  ],
+                  textElements: textElements
+                });
+
+                this.processTexts();
+              }
+            }
+          ],
+          contents: [],
+          previewURL: this.state.previewURL,
+          displayTitle: this.title,
+        };
+        break;
+      default:
+        componentProps = {
+          infoTitle: "",
+          navigationButtons: [],
+          contents: []
+        };
+    }
+
+    return getComponent(componentProps);
   }
 }

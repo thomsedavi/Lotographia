@@ -31,23 +31,39 @@
     <None Remove="ClientApp\src\App.tsx" />
     <None Remove="ClientApp\src\categories\About.tsx" />
     <None Remove="ClientApp\src\categories\Photographia.tsx" />
-    <None Remove="ClientApp\src\components\CheckboxOptionsComponent.tsx" />
+    <None Remove="ClientApp\src\city\Base.tsx" />
+    <None Remove="ClientApp\src\city\levels\Final.tsx" />
+    <None Remove="ClientApp\src\city\levels\Intro.tsx" />
+    <None Remove="ClientApp\src\city\levels\Level.tsx" />
+    <None Remove="ClientApp\src\city\levels\Level1.tsx" />
+    <None Remove="ClientApp\src\city\levels\Level2.tsx" />
+    <None Remove="ClientApp\src\components\CheckboxComponent.tsx" />
     <None Remove="ClientApp\src\components\ComponentContainer.tsx" />
+    <None Remove="ClientApp\src\components\CustomSelectOptionComponent.tsx" />
     <None Remove="ClientApp\src\components\DisplayComponent.tsx" />
     <None Remove="ClientApp\src\components\Home.tsx" />
     <None Remove="ClientApp\src\components\HomeOld.tsx" />
     <None Remove="ClientApp\src\components\InfoComponent.tsx" />
+    <None Remove="ClientApp\src\components\LayersToolComponent.tsx" />
     <None Remove="ClientApp\src\components\Layout.tsx" />
     <None Remove="ClientApp\src\components\NavMenu.tsx" />
-    <None Remove="ClientApp\src\components\Option.tsx" />
-    <None Remove="ClientApp\src\components\OptionComponent.tsx" />
+    <None Remove="ClientApp\src\components\RadioComponent.tsx" />
     <None Remove="ClientApp\src\components\RadioImage.ts" />
-    <None Remove="ClientApp\src\components\RadioOptionsComponent.tsx" />
+    <None Remove="ClientApp\src\components\SelectComponent.tsx" />
+    <None Remove="ClientApp\src\components\SelectOption.tsx" />
     <None Remove="ClientApp\src\components\TextComponent.tsx" />
     <None Remove="ClientApp\src\index.tsx" />
+    <None Remove="ClientApp\src\pictures\LayersTool.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeleton.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\EnchantedWoods.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\PrisonBreak.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\SpaceVoyage.tsx" />
     <None Remove="ClientApp\src\registerServiceWorker.js" />
-    <None Remove="ClientApp\src\utils\Assets.tsx" />
-    <None Remove="ClientApp\src\utils\Utils.tsx" />
+    <None Remove="ClientApp\src\common\Assets.tsx" />
+    <None Remove="ClientApp\src\common\Enums.tsx" />
+    <None Remove="ClientApp\src\common\Interfaces.tsx" />
+    <None Remove="ClientApp\src\common\Utils.tsx" />
   </ItemGroup>
 
   <ItemGroup>

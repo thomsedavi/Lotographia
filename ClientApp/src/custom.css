@@ -50,9 +50,19 @@
     text-align: center;
 }
 
+.component.buttons {
+    margin-top: 1em;
+}
+
 .title {
     color: #024;
     font-size: 3em;
+    font-weight: 700;
+}
+
+.subtitle {
+    color: #024;
+    font-size: 1.5em;
     font-weight: 700;
 }
 
@@ -66,6 +76,14 @@
     display: inline-block;
     font-size: 1.15em;
     width: 75%;
+    color: #024;
+}
+
+.footnote {
+    display: inline-block;
+    font-size: 0.9em;
+    width: 60%;
+    color: #024;
 }
 
 .nav-link {
@@ -135,8 +153,10 @@
 }
 
 .button {
+    border-color: #bdf;
     border-style: solid;
     border-width: 2px;
+    color: #7bf;
     display: inline-block;
     font-weight: 700;
     padding: 4px 12px;
@@ -150,10 +170,6 @@
     cursor: pointer;
 }
 
-.button.action {
-    color: #fff;
-}
-
 .button.action.active {
     background-color: #048;
     border-color: #000;
@@ -163,10 +179,6 @@
     background-color: #05a;
 }
 
-.button.navigation {
-    border-color: #bdf;
-    color: #7bf;
-}
 
 .button.navigation.active {
     background-color: #bdf;

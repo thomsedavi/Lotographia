@@ -1,171 +1,264 @@
-import * as React from 'react';
-import { Button, ComponentContainer } from './ComponentContainer';
+import * as React from "react";
+import { ComponentContainer, ComponentProps } from "./ComponentContainer";
+import { TextType, LayerType, TextComponentType, FontFamily } from "../common/Enums";
+import { TextComponent, Layer, TextElement, SubstituteTexts, RequiredText } from "../common/Interfaces";
 
-export interface TextAreaProps {
-  customValue: string;
-  onChange: (event: string) => void;
-  placeholder: string;
-}
-
-export interface TextProps {
-  originalValue: string;
-  updatedValue: string;
-}
-
-interface TextComponentProps {
-  buttons: Button[];
-  autofill: () => void;
-  context: string;
-  lineLengths: number[];
-  texts: (TextAreaProps | TextProps)[];
-}
-
-const isTextArea = (object: TextAreaProps | TextProps): object is TextAreaProps => {
-  return "customValue" in object;
+export interface TextComponentProps extends ComponentProps {
+  textTitle: string,
+  textElements: TextElement[],
+  onChange: (value: string, index: number) => void,
+  layers: Layer[],
+  isTooLong: boolean,
+  requiredTexts?: RequiredText[]
 }
 
 const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
-  const previewLines: { convertedTexts: CharacterProps[][], tooLong: boolean } = convertText(props.texts, props.lineLengths, true);
+  const children: JSX.Element[] = [];
 
-  const previewComponents: JSX.Element[] = previewLines.convertedTexts.map((line: CharacterProps[], index1) => {
-    const children: JSX.Element[] = line.map((characterProps: CharacterProps, index2) => {
-      const padLeft: boolean = index2 === 0;
-      const padRight: boolean = (index2 === line.length - 1 && !line[index2].isBlank) ||
-        (line[0].isBlank && index2 === line.length - 1) ||
-        (index2 < line.length - 1 && !line[index2].isBlank && line[index2 + 1].isBlank);
+  if (props.requiredTexts !== undefined && props.requiredTexts.length > 0) {
+    const texts: (JSX.Element | string)[] = [`Required word${props.requiredTexts.length > 1 ? "s" : ""}: ` ];
 
-      if (characterProps.isBlank)
-        return <div key={`preview${index1}character${index2}`} className={`character empty${padLeft ? " pad-left" : ""}${padRight ? " pad-right" : ""}`} dangerouslySetInnerHTML={{ __html: `&nbsp;` }} />
+    props.requiredTexts.map((text: RequiredText, index: number) => {
+      // use classes instead of styles
+      texts.push(<div style={{ fontWeight: 700, display: "inline-block", color: text.isMissing ? "#f33" : "#048" }}>{text.text}</div>)
 
-      if (characterProps.character === " ")
-        return <div key={`preview${index1}character${index2}`} className={`character${padLeft ? " pad-left" : ""}${padRight ? " pad-right" : ""}${previewLines.tooLong ? " invalid" : ""}`} dangerouslySetInnerHTML={{ __html: `&nbsp;` }} />
+      if (props.requiredTexts !== undefined && props.requiredTexts.length === 2 && index === props.requiredTexts.length - 2)
+        texts.push(" and ");
 
-      return <div key={`preview${index1}character${index2}`} className={`character${characterProps.isFixed ? " fixed" : ''}${padLeft ? " pad-left" : ""}${padRight ? " pad-right" : ""}${previewLines.tooLong ? " invalid" : ""}`}>
-        {characterProps.character}
-      </div>
+      if (props.requiredTexts !== undefined && props.requiredTexts.length > 2 && index < props.requiredTexts.length - 2)
+        texts.push(", ");
+
+      if (props.requiredTexts !== undefined && props.requiredTexts.length > 2 && index === props.requiredTexts.length - 2)
+        texts.push(", and ");
     });
 
-    return <div key={`preview${index1}`} style={{ marginBottom: '4px' }}>{children}</div>
+    children.push(<div className="component" key="componentRequiredText">
+      <div className="information">{texts}</div>
+    </div>);
+  }
+
+  props.textElements.map((textElement: TextElement, index: number) => {
+    if (textElement.type === TextType.Custom) {
+      children.push(<div className="component" key={`component${index}`}>
+        <textarea className="textArea" rows={2} cols={32}
+          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => props.onChange(event.target.value, index)}
+          value={textElement.text}
+          placeholder={textElement.placeholder} />
+      </div>);
+    } else {
+      let textHelp = "";
+
+      if (index > 0)
+        textHelp += "..."; // use elipsis?
+
+      textHelp = textHelp + textElement.text;
+
+      if (index < props.textElements.length - 1)
+        textHelp += "..."
+
+      children.push(<div className="component"><div className="text">{textHelp}</div></div>);
+    }
   });
 
-  const previewHeading = <div key="previewHeading" className="component heading">Preview</div>;
+  props.layers.filter(layer => layer.layerType === LayerType.Phrase).map((layer: Layer, i: number) => {
+    let fontFamily: string;
 
-  const previewComponent = <div className="component" key="preview2" style={{ fontFamily: 'courier' }}>{previewComponents}</div>;
+    // move this util out
+    switch (layer.fontFamily) {
+      case FontFamily.SansSerif:
+        fontFamily = "sans-serif"
+        break;
+      case FontFamily.Serif:
+        fontFamily = "serif";
+        break;
+      case FontFamily.Monospace:
+      default:
+        fontFamily = "monospace";
+    }
 
-  const autofillComponent = <div className="component" key="autofill">
-    <div className="button action active" onClick={props.autofill}>Random Autofill</div>
-  </div>;
+    // use classes
+    const style: React.CSSProperties = {
+      fontFamily: fontFamily,
+      color: props.isTooLong ? "#f33" : "#000"
+    };
 
-  const textComponents = props.texts.map((text: TextAreaProps | TextProps, index: number) => isTextArea(text) ?
-    <textarea key={`textarea${index}`} className="textArea" rows={2} cols={32} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => { if (text.onChange) text.onChange(event.target.value) }} value={text.customValue} placeholder={text.placeholder} /> :
-    <div key={`text${index}`} className="text">{index > 0 && "..."}{text.originalValue}{index < props.texts.length - 1 && "..."}</div>
-  );
+    const maxHyphens: number = layer.maximumLength !== undefined && layer.remainderFraction !== undefined ?
+      Math.floor(layer.maximumLength * (layer.remainderFraction))
+      : 0;
 
-  const textComponent = <div className="component" key="text">
-    {textComponents}
-  </div>;
+    const hyphen: JSX.Element[] = [];
 
-  const children: JSX.Element[] = [
-    textComponent,
-    previewHeading,
-    previewComponent,
-    autofillComponent
-  ];
+    if (layer.displayRemainder) {
+      for (var j = 0; j < maxHyphens; j++) {
+        hyphen.push(<div style={{ color: "#7bf", display: "inline-block" }} key={`line${i}hyphen${j}`}>_</div>);
+      }
+    }
+
+    children.push(<div className="component">
+      <div className="preview" style={style}>{layer.shownText}{hyphen}</div>
+    </div>);
+  });
 
   return <ComponentContainer
-    buttons={props.buttons}
+    actionButtons={props.actionButtons}
+    navigationButtons={props.navigationButtons}
     children={children}
-    context={props.context}
+    contents={props.contents}
+    loadingState={props.loadingState}
+    title={props.textTitle}
   />;
 }
 
-export interface CharacterProps {
-  character: string;
-  isBlank: boolean;
-  isFixed: boolean;
-}
+export const mapToTextComponents = (textElements: TextElement[], substituteTexts: SubstituteTexts[]) => {
+  let shownText: string = textElements.map((textElement: TextElement, index: number) => {
+    let text = textElement.text || textElement.placeholder;
+  
+    if (text === undefined)
+      return "";
+  
+    if (index > 0 &&
+      text[0] != "," &&
+      text[0] != ":" &&
+      text[0] != ";" &&
+      text[0] != "!" &&
+      text[0] != "?"
+    )
+      text = " " + text;
+  
+    return text;
+  }).join("");
 
-const convertText = (texts: (TextAreaProps | TextProps)[], lineLengths: number[], preview: boolean) => {
-  const convertedTexts: CharacterProps[][] = [];
-  let fullText: CharacterProps[] = [];
+  while (shownText[0] === " ") {
+    shownText = shownText.slice(1);
+  }
 
-  for (let x: number = 0; x < texts.length; x++) {
-    const text: TextAreaProps | TextProps = texts[x];
+  while (shownText[shownText.length - 1] === " ") {
+    shownText = shownText.slice(0, shownText.length - 1);
+  }
 
-    if (isTextArea(text)) {
-      let customText: string = text.customValue || text.placeholder;
-      
-      if (customText[0] !== "," && customText[0] !== ":" && customText[0] !== ";" && customText[0] !== ".")
-        customText = " " + customText;
+  while (shownText.indexOf("  ") >= 0) {
+    shownText = shownText.replace("  ", " ");
+  }
 
-      for (let y: number = 0; y < customText.length; y++)
-        fullText.push({ character: customText[y], isBlank: false, isFixed: false });
+  while (shownText.indexOf("\n ") >= 0) {
+    shownText = shownText.replace("\n ", "\n");
+  }
+
+  while (shownText.indexOf(" \n") >= 0) {
+    shownText = shownText.replace(" \n", "\n");
+  }
+
+  while (shownText.indexOf("\n\n") >= 0) {
+    shownText = shownText.replace("\n\n", "\n");
+  }
+
+  let hiddenText = shownText;
+  let requiredTexts: RequiredText[] = [];
+
+  substituteTexts.forEach(substituteText => {
+    let hasRequiredTexts = false;
+  
+    substituteText.variantTexts.forEach(variantText => {
+      let indexOf: number = hiddenText.toLowerCase().indexOf(variantText.shownText.toLowerCase());
+    
+      while (indexOf >= 0) {
+        hasRequiredTexts = true;
+    
+        // want to handle spaces properly so that if "cat" becomes "dog" then "catalogue" doesn't become "dogalogue"
+        const splitInitial = hiddenText.slice(indexOf, indexOf + variantText.shownText.length).split(" ");
+        const splitFinal = variantText.hiddenText.split(" ");
+        
+        const adjustedCapitals = splitInitial.map((initial: string, index: number) => {
+          const final = splitFinal[index];
+        
+          if (initial === initial.toUpperCase())
+            return final.toUpperCase();
+        
+          if (initial[0].toUpperCase() === initial[0])
+            return final[0].toUpperCase() + final.slice(1).toLowerCase();
+        
+          return final;
+        }).join(" ");
+        
+        hiddenText = hiddenText.slice(0, indexOf) +
+          adjustedCapitals +
+          hiddenText.slice(indexOf + variantText.shownText.length);
+
+        indexOf = hiddenText.toLowerCase().indexOf(variantText.shownText.toLowerCase());
+      }
+    });
+  
+    if (substituteText.isRequired) {
+      requiredTexts.push({
+        text: substituteText.displayedText,
+        isMissing: !hasRequiredTexts
+      });
+    }
+  });
+
+  const textComponents: TextComponent[] = [];
+
+  let loopCounter: number = 0;
+
+  while (shownText.length > 0 && loopCounter < 50) {
+    if (shownText[0] === " ") {
+      textComponents.push({
+        type: TextComponentType.Space
+      });
+  
+      shownText = shownText.slice(1);
+      hiddenText = hiddenText.slice(1);
+    } else if (shownText[0] === "\n") {
+      textComponents.push({
+        type: TextComponentType.Return
+      });
+  
+      shownText = shownText.slice(1);
+      hiddenText = hiddenText.slice(1);
+    } else if (shownText[0] === "-") {
+      textComponents.push({
+        type: TextComponentType.Hyphen
+      });
+  
+      shownText = shownText.slice(1);
+      hiddenText = hiddenText.slice(1);
     } else {
-      let fixedText: string = preview ? text.originalValue : text.updatedValue;
-
-      fixedText = " " + fixedText;
-
-      for (let y: number = 0; y < fixedText.length; y++)
-        fullText.push({ character: fixedText[y], isBlank: false, isFixed: true });
+      let displayedIndex: number = 0;
+      let finalIndex: number = 0;
+  
+      while (displayedIndex < shownText.length &&
+        shownText[displayedIndex] !== " " &&
+        shownText[displayedIndex] !== "\n" &&
+        shownText[displayedIndex] !== "-")
+        displayedIndex++;
+  
+      while (finalIndex < hiddenText.length &&
+        hiddenText[finalIndex] !== " " &&
+        hiddenText[finalIndex] !== "\n" &&
+        hiddenText[finalIndex] !== "-")
+        finalIndex++;
+  
+      textComponents.push({
+        type: TextComponentType.Word,
+        variantText: {
+          shownText: shownText.substring(0, displayedIndex),
+          hiddenText: hiddenText.substring(0, finalIndex)
+        }
+      });
+  
+      shownText = shownText.slice(displayedIndex);
+      hiddenText = hiddenText.slice(finalIndex);
     }
   }
 
-  let index: number = 1;
-
-  while (index < fullText.length) {
-    if (fullText[index - 1].character === " " && fullText[index].character === " ")
-      fullText.splice(index - 1, 1);
-    else
-      index++;
-  }
-
-  if (fullText[fullText.length - 1].character === " ")
-    fullText.splice(fullText.length - 1);
-
-  for (let x: number = 0; x < lineLengths.length; x++) {
-    const lineLength = lineLengths[x];
-    let slicePoint = lineLength;
-
-    while (fullText.length >= 0 && fullText[0] && (fullText[0].character === ' ' || fullText[0].character === '\n')) {
-      fullText.splice(0, 1);
-    }
-
-    while (fullText.length >= 0 && fullText[0] && (fullText[fullText.length - 1].character === ' ' || fullText[fullText.length - 1].character === '\n'))
-      fullText.splice(fullText.length - 1, fullText.length);
-
-    const stringText = fullText.map(t => t.character).join(""); // do I need join?
-
-    const firstNewLine = stringText.slice(0, slicePoint + 1).indexOf('\n');
-    const lastSpace = stringText.slice(0, slicePoint + 1).lastIndexOf(' ');
-    const lastHyphen = stringText.slice(0, slicePoint).lastIndexOf('-');
-
-    if (firstNewLine >= 0)
-      slicePoint = firstNewLine;
-    else if (slicePoint < fullText.length)
-      if (lastHyphen >= 0 && lastHyphen > lastSpace)
-        slicePoint = lastHyphen + 1;
-      else if (lastSpace >= 0)
-        slicePoint = lastSpace;
-
-    const convertedText = fullText.slice(0, slicePoint);
-
-    while (convertedText.length >= 0 && convertedText[0] && (convertedText[convertedText.length - 1].character === ' '))
-      convertedText.splice(convertedText.length - 1, convertedText.length);
-
-    for (let x: number = convertedText.length; x < lineLength; x++)
-      convertedText.push({ character: " ", isFixed: false, isBlank: true });
-
-    while (fullText.length >= 0 && fullText[0] && (fullText[0].character === ' ' || fullText[0].character === '\n'))
-      fullText.splice(0, 1);
-
-    while (fullText.length >= 0 && fullText[0] && (fullText[fullText.length - 1].character === '' || fullText[fullText.length - 1].character === '\n'))
-      fullText.splice(fullText.length - 1, fullText.length);
-
-    convertedTexts.push(convertedText);
-    fullText = fullText.slice(slicePoint);
-  }
-
-  return { convertedTexts, tooLong: fullText.length > 0 };
+  return {
+    textComponents: textComponents,
+    requiredTexts: requiredTexts
+  };
 }
 
-export { isTextArea, TextComponent, convertText }
+export const isTextComponent = (object: ComponentProps): object is TextComponentProps => {
+  return "textTitle" in object;
+}
+
+export { TextComponent }

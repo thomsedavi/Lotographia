@@ -1,28 +1,21 @@
 import * as React from 'react';
-import { Button, ComponentContainer } from './ComponentContainer';
-import { StatusLoading, StatusReady } from '../utils/Assets';
+import { ComponentContainer, ComponentProps } from './ComponentContainer';
 
-interface InfoComponentProps {
-  buttons: Button[];
-  content: string[];
-  isLoading?: boolean;
+export interface InfoComponentProps extends ComponentProps {
+  infoTitle: string;
 }
 
 const InfoComponent: React.StatelessComponent<InfoComponentProps> = (props) => {
-  const infoComponents = props.content.map((info, index) => <div key={`info${index}`} className="component">
-    <div className="information">
-      {info}
-    </div>
-  </div>);
-
-  props.isLoading !== undefined && infoComponents.push(<div key="loading" className="component">
-    {props.isLoading ? StatusLoading : StatusReady}
-    </div>);
-
   return <ComponentContainer
-    buttons={props.buttons}
-    children={infoComponents}
-  />
+    navigationButtons={props.navigationButtons}
+    contents={props.contents}
+    loadingState={props.loadingState}
+    title={props.infoTitle}
+  />;
+}
+
+export const isInfoComponent = (object: ComponentProps): object is InfoComponentProps => {
+  return "infoTitle" in object;
 }
 
 export { InfoComponent }
