@@ -56,6 +56,10 @@ export const PrisonBreak: GameOptionDetails = {
       isRequired: false,
       variantTexts: [
         {
+          shownText: "prisoner",
+          hiddenText: "mariner"
+        },
+        {
           shownText: "prison",
           hiddenText: "harbour"
         }

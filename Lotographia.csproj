@@ -59,6 +59,7 @@
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\EnchantedWoods.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\PrisonBreak.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\SpaceVoyage.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\ToyBox.tsx" />
     <None Remove="ClientApp\src\registerServiceWorker.js" />
     <None Remove="ClientApp\src\common\Assets.tsx" />
     <None Remove="ClientApp\src\common\Enums.tsx" />

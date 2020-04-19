@@ -9,7 +9,7 @@ import { SubstituteTexts, GameDetails, ProcessedTextsState, TextComponent, GameO
 import { TextType, FontFamily } from "../common/Enums";
 import { getFileImageObjectURL, getProcessedImageObjectURL, getProcessedTexts } from "../common/Utils";
 import { StatusLoading, StatusReady, StatusChecking, StatusTooLong, StatusGood, StatusRequiredWords } from '../common/Assets';
-import { Images, Games } from "./MeticulousSkeletonCollection";
+import { Images, Games, DefaultGameId } from "./MeticulousSkeletonCollection";
 
 enum GameMode {
   Curated = "Curated",
@@ -36,7 +36,6 @@ interface MeticulousSkeletonState {
 
 export class MeticulousSkeleton extends React.Component<any, MeticulousSkeletonState> {
   title: string = "Meticulous Skeleton";
-  defaultGameId: string = "prisonbreak";
 
   timeout?: number;
 
@@ -57,7 +56,7 @@ export class MeticulousSkeleton extends React.Component<any, MeticulousSkeletonS
       imageLoaded: false,
       isTooLong: false,
       requiredTexts: [],
-      usedRandomGames: [this.defaultGameId]
+      usedRandomGames: [DefaultGameId]
     };
   }
 
@@ -92,7 +91,7 @@ export class MeticulousSkeleton extends React.Component<any, MeticulousSkeletonS
   componentDidMount = () => {
     const searchParams = new URLSearchParams(window.location.search);
 
-    this.selectGame(searchParams.get("gameid") || this.defaultGameId);
+    this.selectGame(searchParams.get("gameid") || DefaultGameId);
 
     // looks odd if "loading" transitions to "ready" too fast
     setTimeout(() => {
@@ -141,7 +140,7 @@ export class MeticulousSkeleton extends React.Component<any, MeticulousSkeletonS
     let game = Games.filter(g => g.id === gameId)[0];
 
     if (game === undefined)
-      game = Games.filter(g => g.id === this.defaultGameId)[0];
+      game = Games.filter(g => g.id === DefaultGameId)[0];
 
     const usedRandomGames = this.state.usedRandomGames;
 
@@ -365,7 +364,9 @@ export class MeticulousSkeleton extends React.Component<any, MeticulousSkeletonS
           textTitle: this.title,
           textElements: [this.state.textElement],
           contents: [
-            "Fill in the text space below with a short piece of poetry or fiction, using the required words and allowing the Mysterious Algorithm to determine whether your text fits in the available space"
+            "Fill in the text space below with a short piece of poetry or fiction, using the required words and allowing the Mysterious Algorithm to determine whether your text fits in the available space",
+            "Tip: Try to use as many lines of the available lines as you can",
+            "(results will vary...)"
           ],
           onChange: this.updateText,
           layers: game.layers,
