@@ -111,7 +111,7 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
 
 export const mapToTextComponents = (textElements: TextElement[], substituteTexts: SubstituteTexts[]) => {
   let shownText: string = textElements.map((textElement: TextElement, index: number) => {
-    let text = textElement.text || textElement.placeholder;
+    let text = textElement.text || "...";
   
     if (text === undefined)
       return "";

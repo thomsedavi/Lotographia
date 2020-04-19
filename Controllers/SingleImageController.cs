@@ -250,8 +250,14 @@ namespace Lotographia.Controllers
 
             var emSize = layer.FontSize;
             var font = new Font(fontFamily, emSize, FontStyle.Bold);
+
             var textSize = g.MeasureString(layer.HiddenText, font);
-            var size = new Size((int)Math.Ceiling(textSize.Width), (int)Math.Ceiling(textSize.Height));
+
+            var stringColor = ColorTranslator.FromHtml(layer.TextColor);
+            var stringBrush = new SolidBrush(stringColor);
+            var rightMarginOffset = getRightMarginOffset(layer.HiddenText, font, textSize);
+
+            var size = new Size((int)Math.Ceiling(textSize.Width) - rightMarginOffset, (int)Math.Ceiling(textSize.Height));
 
             g.TranslateTransform(layer.HorizontalPosition * img.Width, layer.VerticalPosition * img.Height);
             g.RotateTransform(layer.Rotation);
@@ -268,13 +274,85 @@ namespace Lotographia.Controllers
                 g.FillRectangle(rectangleBrush, rectangle);
             }
 
-            var stringColor = ColorTranslator.FromHtml(layer.TextColor);
-            var stringBrush = new SolidBrush(stringColor);
-
             g.DrawString(layer.HiddenText, font, stringBrush, point);
 
             g.RotateTransform(-layer.Rotation);
             g.TranslateTransform(-(layer.HorizontalPosition * img.Width), -(layer.VerticalPosition * img.Height));
+        }
+
+        // The Graphics.MeasureString method tends to add an increasing right margin the longer the string is.
+        // Couldn't find a solution to this so wrote up this very brute force process to calculate how much
+        // needs to be trimmed from the right margin. Basically draws the string and goes through the pixel
+        // on the left and right until it hits a word, then returns the difference.
+        // I need to measure how long this process takes but it does not appear to add much time to image generation.
+        private int getRightMarginOffset(string hiddenText, Font font, SizeF textSize)
+        {
+            var height = (int)Math.Ceiling(textSize.Height);
+            var width = (int)Math.Ceiling(textSize.Width);
+
+            var bitmap = new Bitmap(width, height);
+            bitmap.SetResolution(300, 300);
+
+            var graphics = Graphics.FromImage(bitmap);
+            var whiteBrush = new SolidBrush(Color.White);
+            graphics.DrawString(hiddenText, font, whiteBrush, Point.Empty);
+
+            var byteGrid = new byte[width][];
+
+            for (var x = 0; x < width; x++)
+            {
+                var bytes = new byte[height];
+
+                for (var y = 0; y < height; y++)
+                {
+                    var pixel = bitmap.GetPixel(x, y);
+                    bytes[y] = pixel.R;
+                }
+
+                byteGrid[x] = bytes;
+            }
+
+            var leftMargin = -1;
+            var leftXPosition = 0;
+            var leftYPosition = 0;
+
+            do
+            {
+                var thisByte = byteGrid[leftXPosition][leftYPosition];
+
+                if (thisByte != 0)
+                    leftMargin = leftXPosition;
+                else if (leftYPosition < height - 1)
+                    leftYPosition++;
+                else
+                {
+                    leftYPosition = 0;
+                    leftXPosition++;
+                }
+            }
+            while (leftMargin == -1);
+
+            var rightMargin = -1;
+            var rightXPosition = 0;
+            var rightYPosition = 0;
+
+            do
+            {
+                var thisByte = byteGrid[width - 1 - rightXPosition][rightYPosition];
+
+                if (thisByte != 0)
+                    rightMargin = rightXPosition;
+                else if (rightYPosition < height - 1)
+                    rightYPosition++;
+                else
+                {
+                    rightYPosition = 0;
+                    rightXPosition++;
+                }
+            }
+            while (rightMargin == -1);
+
+            return rightMargin - leftMargin;
         }
 
         // borrowed from innernet
