@@ -71,6 +71,9 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
       case FontFamily.Serif:
         fontFamily = "serif";
         break;
+      case FontFamily.Journal:
+        fontFamily = "journalregular";
+        break;
       case FontFamily.Monospace:
       default:
         fontFamily = "monospace";

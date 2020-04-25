@@ -101,6 +101,7 @@ const LayerComponent: React.StatelessComponent<LayerComponentProps> = (props) =>
           <option value={FontFamily.Monospace}>Monospace</option>
           <option value={FontFamily.Serif}>Serif</option>
           <option value={FontFamily.SansSerif}>Sans Serif</option>
+          <option value={FontFamily.Journal}>Journal</option>
         </select>
       </div>
 
@@ -147,6 +148,9 @@ const LayerComponent: React.StatelessComponent<LayerComponentProps> = (props) =>
             break;
           case FontFamily.Serif:
             layer.fontFamily = FontFamily.Serif;
+            break;
+          case FontFamily.Journal:
+            layer.fontFamily = FontFamily.Journal;
             break;
           case FontFamily.Monospace:
           default:
@@ -295,6 +299,9 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
           break;
         case FontFamily.Serif:
           fontFamily = "FontFamily.Serif";
+          break;
+        case FontFamily.Journal:
+          layer.fontFamily = FontFamily.Journal;
           break;
         case FontFamily.Monospace:
         default:

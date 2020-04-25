@@ -4,12 +4,25 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Drawing.Text;
 using System.IO;
 
 namespace Lotographia.Controllers
 {
     public class SingleImageController : Controller
     {
+        private static readonly string Directory = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
+                ? "public"
+                : "build";
+        private readonly PrivateFontCollection PrivateFontCollection;
+
+        public SingleImageController()
+        {
+            // actually don't want to do this every time, make happen globally
+            PrivateFontCollection = new PrivateFontCollection();
+            PrivateFontCollection.AddFontFile($"ClientApp/{Directory}/Fonts/journal-webfont.ttf");
+        }
+
         public JsonResult GetProcessedTexts()
         {
             GetProcessedTextsBody details;
@@ -33,9 +46,10 @@ namespace Lotographia.Controllers
 
                 var fontFamily = line.FontFamily switch
                 {
-                    "SansSerif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.SansSerif),
-                    "Serif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.Serif),
-                    _ => new FontFamily(System.Drawing.Text.GenericFontFamilies.Monospace),
+                    "SansSerif" => new FontFamily(GenericFontFamilies.SansSerif),
+                    "Serif" => new FontFamily(GenericFontFamilies.Serif),
+                    "Journal" => PrivateFontCollection.Families[0],
+                    _ => new FontFamily(GenericFontFamilies.Monospace),
                 };
 
                 var font = new Font(fontFamily, 16, FontStyle.Bold);
@@ -141,10 +155,6 @@ namespace Lotographia.Controllers
 
         public FileResult DownloadImageFile()
         {
-            var directory = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
-                ? "public"
-                : "build";
-
             ImageFileDetails details;
 
             using (var reader = new StreamReader(Request.Body))
@@ -154,7 +164,7 @@ namespace Lotographia.Controllers
                 details = JObject.Parse(body).ToObject<ImageFileDetails>();
             }
 
-            var img = Image.FromFile($"ClientApp/{directory}/{details.FileName}");
+            var img = Image.FromFile($"ClientApp/{Directory}/{details.FileName}");
 
             var ms = new MemoryStream();
 
@@ -165,10 +175,6 @@ namespace Lotographia.Controllers
 
         public FileResult DownloadImage()
         {
-            var directory = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
-                ? "public"
-                : "build";
-
             GameDetails details;
 
             using (var reader = new StreamReader(Request.Body))
@@ -178,7 +184,7 @@ namespace Lotographia.Controllers
                 details = JObject.Parse(body).ToObject<GameDetails>();
             }
 
-            var img = Image.FromFile($"ClientApp/{directory}/{details.Base}");
+            var img = Image.FromFile($"ClientApp/{Directory}/{details.Base}");
 
             var g = Graphics.FromImage(img);
 
@@ -190,7 +196,7 @@ namespace Lotographia.Controllers
                 switch (experiment.LayerType)
                 {
                     case LayerType.Image:
-                        DrawImage(experiment, img, g, directory);
+                        DrawImage(experiment, img, g);
                         break;
                     case LayerType.Phrase:
                         DrawPhrase(experiment, img, g);
@@ -221,60 +227,77 @@ namespace Lotographia.Controllers
             return File(ms.ToArray(), "image/jpeg", "image.jpg");
         }
 
-        private void DrawImage(Layer experiment, Image img, Graphics g, string directory)
+        private void DrawImage(Layer experiment, Image img, Graphics g)
         {
-            // shares this translation stuff with DrawText, could reuse
-            g.TranslateTransform((experiment.HorizontalPosition) * img.Width, (experiment.VerticalPosition) * img.Height);
-            g.RotateTransform(experiment.Rotation);
-
-            Image layerImg = Image.FromFile($"ClientApp/{directory}/{experiment.FileName}");
+            Image layerImg = Image.FromFile($"ClientApp/{Directory}/{experiment.FileName}");
 
             var point = new Point(
                 Convert.ToInt32((layerImg.Width * experiment.HorizontalAlignment) - layerImg.Width),
                 Convert.ToInt32((layerImg.Height * experiment.VerticalAlignment) - layerImg.Height));
 
+            // shares this translation stuff with DrawText, could reuse
+            g.TranslateTransform(experiment.HorizontalPosition * img.Width, experiment.VerticalPosition * img.Height);
+            g.RotateTransform(experiment.Rotation);
+
             g.DrawImage(layerImg, point);
 
             g.RotateTransform(-experiment.Rotation);
-            g.TranslateTransform(-((experiment.HorizontalPosition) * img.Width), -((experiment.VerticalPosition) * img.Height));
+            g.TranslateTransform(-(experiment.HorizontalPosition * img.Width), -(experiment.VerticalPosition * img.Height));
         }
 
         private void DrawPhrase(Layer layer, Image img, Graphics g)
         {
             var fontFamily = layer.FontFamily switch
             {
-                "SansSerif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.SansSerif),
-                "Serif" => new FontFamily(System.Drawing.Text.GenericFontFamilies.Serif),
-                _ => new FontFamily(System.Drawing.Text.GenericFontFamilies.Monospace),
+                "SansSerif" => new FontFamily(GenericFontFamilies.SansSerif),
+                "Serif" => new FontFamily(GenericFontFamilies.Serif),
+                "Journal" => PrivateFontCollection.Families[0],
+                _ => new FontFamily(GenericFontFamilies.Monospace),
             };
 
             var emSize = layer.FontSize;
             var font = new Font(fontFamily, emSize, FontStyle.Bold);
 
             var textSize = g.MeasureString(layer.HiddenText, font);
+            var textWidth = (int)Math.Ceiling(textSize.Width);
+            var textHeight = (int)Math.Ceiling(textSize.Height);
 
             var stringColor = ColorTranslator.FromHtml(layer.TextColor);
             var stringBrush = new SolidBrush(stringColor);
-            var rightMarginOffset = getRightMarginOffset(layer.HiddenText, font, textSize);
 
-            var size = new Size((int)Math.Ceiling(textSize.Width) - rightMarginOffset, (int)Math.Ceiling(textSize.Height));
+            var draftBitmap = new Bitmap(textWidth, textHeight);
+            draftBitmap.SetResolution(300, 300);
 
-            g.TranslateTransform(layer.HorizontalPosition * img.Width, layer.VerticalPosition * img.Height);
-            g.RotateTransform(layer.Rotation);
+            var graphics = Graphics.FromImage(draftBitmap);
+            graphics.DrawString(layer.HiddenText, font, stringBrush, Point.Empty);
 
-            var point = new Point(
-                Convert.ToInt32((size.Width * layer.HorizontalAlignment) - size.Width),
-                Convert.ToInt32((size.Height * layer.VerticalAlignment) - size.Height));
+            int rightMarginOffset = getRightMarginOffset(draftBitmap);
+            var finalBitmap = new Bitmap(textWidth - rightMarginOffset, textHeight);
+            finalBitmap.SetResolution(300, 300);
 
             if (layer.BackgroundColor.ToLower() != "none")
             {
-                var rectangleColor = ColorTranslator.FromHtml(layer.BackgroundColor);
-                var rectangleBrush = new SolidBrush(rectangleColor);
-                var rectangle = new Rectangle(point, size);
-                g.FillRectangle(rectangleBrush, rectangle);
+                var backgroundColor = ColorTranslator.FromHtml(layer.BackgroundColor);
+
+                for (var x = 0; x < finalBitmap.Width; x++)
+                {
+                    for (var y = 0; y < finalBitmap.Height; y++)
+                    {
+                        var pixel = draftBitmap.GetPixel(x, y);
+                        finalBitmap.SetPixel(x, y, pixel.A == 0 ? backgroundColor : pixel);
+                    }
+                }
             }
 
-            g.DrawString(layer.HiddenText, font, stringBrush, point);
+            var point = new Point(
+                Convert.ToInt32((finalBitmap.Width * layer.HorizontalAlignment) - finalBitmap.Width),
+                Convert.ToInt32((finalBitmap.Height * layer.VerticalAlignment) - finalBitmap.Height));
+
+            // shares this translation stuff with DrawText, could reuse
+            g.TranslateTransform(layer.HorizontalPosition * img.Width, layer.VerticalPosition * img.Height);
+            g.RotateTransform(layer.Rotation);
+
+            g.DrawImage(finalBitmap, point);
 
             g.RotateTransform(-layer.Rotation);
             g.TranslateTransform(-(layer.HorizontalPosition * img.Width), -(layer.VerticalPosition * img.Height));
@@ -285,17 +308,10 @@ namespace Lotographia.Controllers
         // needs to be trimmed from the right margin. Basically draws the string and goes through the pixel
         // on the left and right until it hits a word, then returns the difference.
         // I need to measure how long this process takes but it does not appear to add much time to image generation.
-        private int getRightMarginOffset(string hiddenText, Font font, SizeF textSize)
+        private int getRightMarginOffset(Bitmap bitmap)
         {
-            var height = (int)Math.Ceiling(textSize.Height);
-            var width = (int)Math.Ceiling(textSize.Width);
-
-            var bitmap = new Bitmap(width, height);
-            bitmap.SetResolution(300, 300);
-
-            var graphics = Graphics.FromImage(bitmap);
-            var whiteBrush = new SolidBrush(Color.White);
-            graphics.DrawString(hiddenText, font, whiteBrush, Point.Empty);
+            var width = bitmap.Width;
+            var height = bitmap.Height;
 
             var byteGrid = new byte[width][];
 
@@ -306,7 +322,7 @@ namespace Lotographia.Controllers
                 for (var y = 0; y < height; y++)
                 {
                     var pixel = bitmap.GetPixel(x, y);
-                    bytes[y] = pixel.R;
+                    bytes[y] = pixel.A;
                 }
 
                 byteGrid[x] = bytes;

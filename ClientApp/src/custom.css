@@ -1,3 +1,10 @@
+@font-face {
+    font-family: "journalregular";
+    src: url("fonts/journal-webfont.woff") format("woff");
+    font-weight: normal;
+    font-style: normal;
+}
+
 @media all and (max-width: 575px) {
     .container {
         max-width: 500px;

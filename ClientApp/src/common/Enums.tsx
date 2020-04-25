@@ -1,7 +1,8 @@
 export enum FontFamily {
   Monospace = "Monospace",
   Serif = "Serif",
-  SansSerif = "SansSerif"
+  SansSerif = "SansSerif",
+  Journal = "Journal"
 }
 
 export enum TextType {
