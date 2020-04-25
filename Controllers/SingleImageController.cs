@@ -166,11 +166,11 @@ namespace Lotographia.Controllers
 
             var img = Image.FromFile($"ClientApp/{Directory}/{details.FileName}");
 
-            var ms = new MemoryStream();
+            var memoryStream = new MemoryStream();
 
-            img.Save(ms, ImageFormat.Png);
+            img.Save(memoryStream, ImageFormat.Png);
 
-            return File(ms.ToArray(), "image/png", "image.png");
+            return File(memoryStream.ToArray(), "image/png", "image.png");
         }
 
         public FileResult DownloadImage()
@@ -184,24 +184,22 @@ namespace Lotographia.Controllers
                 details = JObject.Parse(body).ToObject<GameDetails>();
             }
 
-            var img = Image.FromFile($"ClientApp/{Directory}/{details.Base}");
+            var baseImage = Image.FromFile($"ClientApp/{Directory}/{details.Base}");
 
-            var g = Graphics.FromImage(img);
+            var graphics = Graphics.FromImage(baseImage);
 
-            foreach (var experiment in details.Layers)
+            foreach (var layer in details.Layers)
             {
-                if (!experiment.IsVisible)
+                if (!layer.IsVisible)
                     continue;
 
-                switch (experiment.LayerType)
+                Image layerImage = layer.LayerType switch
                 {
-                    case LayerType.Image:
-                        DrawImage(experiment, img, g);
-                        break;
-                    case LayerType.Phrase:
-                        DrawPhrase(experiment, img, g);
-                        break;
-                }
+                    LayerType.Phrase => GetPhraseImage(layer, graphics),
+                    _ => Image.FromFile($"ClientApp/{Directory}/{layer.FileName}")
+                };
+
+                DrawLayer(baseImage, graphics, layer, layerImage);
             }
 
             var lotoPhrase = new Layer
@@ -216,36 +214,20 @@ namespace Lotographia.Controllers
                 TextColor = details.LotoColour
             };
 
-            DrawPhrase(lotoPhrase, img, g);
-            
-            img = ResizeImage(img, details.Width, details.Height);
+            var lotoImage = GetPhraseImage(lotoPhrase, graphics);
 
-            var ms = new MemoryStream();
+            DrawLayer(baseImage, graphics, lotoPhrase, lotoImage);
 
-            img.Save(ms, ImageFormat.Jpeg);
+            baseImage = ResizeImage(baseImage, details.Width, details.Height);
 
-            return File(ms.ToArray(), "image/jpeg", "image.jpg");
+            var memoryStream = new MemoryStream();
+
+            baseImage.Save(memoryStream, ImageFormat.Jpeg);
+
+            return File(memoryStream.ToArray(), "image/jpeg", "image.jpg");
         }
 
-        private void DrawImage(Layer experiment, Image img, Graphics g)
-        {
-            Image layerImg = Image.FromFile($"ClientApp/{Directory}/{experiment.FileName}");
-
-            var point = new Point(
-                Convert.ToInt32((layerImg.Width * experiment.HorizontalAlignment) - layerImg.Width),
-                Convert.ToInt32((layerImg.Height * experiment.VerticalAlignment) - layerImg.Height));
-
-            // shares this translation stuff with DrawText, could reuse
-            g.TranslateTransform(experiment.HorizontalPosition * img.Width, experiment.VerticalPosition * img.Height);
-            g.RotateTransform(experiment.Rotation);
-
-            g.DrawImage(layerImg, point);
-
-            g.RotateTransform(-experiment.Rotation);
-            g.TranslateTransform(-(experiment.HorizontalPosition * img.Width), -(experiment.VerticalPosition * img.Height));
-        }
-
-        private void DrawPhrase(Layer layer, Image img, Graphics g)
+        private Image GetPhraseImage(Layer layer, Graphics graphics)
         {
             var fontFamily = layer.FontFamily switch
             {
@@ -258,21 +240,23 @@ namespace Lotographia.Controllers
             var emSize = layer.FontSize;
             var font = new Font(fontFamily, emSize, FontStyle.Bold);
 
-            var textSize = g.MeasureString(layer.HiddenText, font);
-            var textWidth = (int)Math.Ceiling(textSize.Width);
-            var textHeight = (int)Math.Ceiling(textSize.Height);
+            var draftTextSize = graphics.MeasureString(layer.HiddenText, font);
+            var draftTextWidth = (int)Math.Ceiling(draftTextSize.Width);
+            var textHeight = (int)Math.Ceiling(draftTextSize.Height);
 
             var stringColor = ColorTranslator.FromHtml(layer.TextColor);
             var stringBrush = new SolidBrush(stringColor);
 
-            var draftBitmap = new Bitmap(textWidth, textHeight);
+            // based on MeasureString, this tends to have extra margin on right
+            var draftBitmap = new Bitmap(draftTextWidth, textHeight);
             draftBitmap.SetResolution(300, 300);
 
-            var graphics = Graphics.FromImage(draftBitmap);
-            graphics.DrawString(layer.HiddenText, font, stringBrush, Point.Empty);
+            var draftGraphics = Graphics.FromImage(draftBitmap);
+            draftGraphics.DrawString(layer.HiddenText, font, stringBrush, Point.Empty);
 
+            // find out how much to reduce the margin by
             int rightMarginOffset = getRightMarginOffset(draftBitmap);
-            var finalBitmap = new Bitmap(textWidth - rightMarginOffset, textHeight);
+            var finalBitmap = new Bitmap(draftTextWidth - rightMarginOffset, textHeight);
             finalBitmap.SetResolution(300, 300);
 
             if (layer.BackgroundColor.ToLower() != "none")
@@ -289,18 +273,23 @@ namespace Lotographia.Controllers
                 }
             }
 
+            return finalBitmap;
+        }
+
+        private void DrawLayer(Image image, Graphics graphics, Layer layer, Image layerImage)
+        {
             var point = new Point(
-                Convert.ToInt32((finalBitmap.Width * layer.HorizontalAlignment) - finalBitmap.Width),
-                Convert.ToInt32((finalBitmap.Height * layer.VerticalAlignment) - finalBitmap.Height));
+                Convert.ToInt32((layerImage.Width * layer.HorizontalAlignment) - layerImage.Width),
+                Convert.ToInt32((layerImage.Height * layer.VerticalAlignment) - layerImage.Height));
 
-            // shares this translation stuff with DrawText, could reuse
-            g.TranslateTransform(layer.HorizontalPosition * img.Width, layer.VerticalPosition * img.Height);
-            g.RotateTransform(layer.Rotation);
+            graphics.TranslateTransform(layer.HorizontalPosition * image.Width, layer.VerticalPosition * image.Height);
+            graphics.RotateTransform(layer.Rotation);
 
-            g.DrawImage(finalBitmap, point);
+            graphics.DrawImage(layerImage, point);
 
-            g.RotateTransform(-layer.Rotation);
-            g.TranslateTransform(-(layer.HorizontalPosition * img.Width), -(layer.VerticalPosition * img.Height));
+            graphics.RotateTransform(-layer.Rotation);
+            graphics.TranslateTransform(-(layer.HorizontalPosition * image.Width), -(layer.VerticalPosition * image.Height));
+
         }
 
         // The Graphics.MeasureString method tends to add an increasing right margin the longer the string is.
@@ -368,7 +357,9 @@ namespace Lotographia.Controllers
             }
             while (rightMargin == -1);
 
-            return rightMargin - leftMargin;
+            var rightMarginDifference = rightMargin - leftMargin;
+
+            return Math.Max(0, rightMarginDifference);
         }
 
         // borrowed from innernet
