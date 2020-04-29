@@ -301,7 +301,7 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
           fontFamily = "FontFamily.Serif";
           break;
         case FontFamily.Journal:
-          layer.fontFamily = FontFamily.Journal;
+          fontFamily = "FontFamily.Journal";
           break;
         case FontFamily.Monospace:
         default:

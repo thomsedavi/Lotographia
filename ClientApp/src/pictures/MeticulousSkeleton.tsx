@@ -340,7 +340,7 @@ export class MeticulousSkeleton extends React.Component<any, MeticulousSkeletonS
               onClick: this.next
             }
           ],
-          contents: ["Choose a game. I plan to add a new one every week."],
+          contents: ["Choose a game. I plan to add a new one every week, list is from newest to oldest."],
           options: Games,
           //actionButtons: [
           //  {

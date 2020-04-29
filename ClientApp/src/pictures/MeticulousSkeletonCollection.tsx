@@ -1,11 +1,13 @@
 import { GameOptionDetails, LoadedImage } from "../common/Interfaces";
 
-import { ToyBox } from "./MeticulousSkeletonGames/ToyBox";
-import { PrisonBreak } from "./MeticulousSkeletonGames/PrisonBreak";
-import { EnchantedWoods } from "./MeticulousSkeletonGames/EnchantedWoods";
-import { SpaceVoyage } from "./MeticulousSkeletonGames/SpaceVoyage";
+import { OfficeMeeting } from "./MeticulousSkeletonGames/5_OfficeMeeting";
+import { ToyBox } from "./MeticulousSkeletonGames/4_ToyBox";
+import { PrisonBreak } from "./MeticulousSkeletonGames/3_PrisonBreak";
+import { SpaceVoyage } from "./MeticulousSkeletonGames/2_SpaceVoyage";
+import { EnchantedWoods } from "./MeticulousSkeletonGames/1_EnchantedWoods";
 
 export const Images: { [id: string]: LoadedImage } = {
+  ["officemeeting"]: { src: "MeticulousSkeleton/OfficeMeetingIcon.png" },
   ["toybox"]: { src: "MeticulousSkeleton/ToyBoxIcon.png" },
   ["prisonbreak"]: { src: "MeticulousSkeleton/PrisonBreakIcon.png" },
   ["spacevoyage"]: { src: "MeticulousSkeleton/SpaceVoyageIcon.png" },
@@ -13,10 +15,11 @@ export const Images: { [id: string]: LoadedImage } = {
 }
 
 export const Games: GameOptionDetails[] = [
+  OfficeMeeting,
   ToyBox,
   PrisonBreak,
   EnchantedWoods,
   SpaceVoyage
 ]
 
-export const DefaultGameId: string = "toybox";
+export const DefaultGameId: string = "officemeeting";

@@ -56,10 +56,11 @@
     <None Remove="ClientApp\src\pictures\LayersTool.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeleton.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\EnchantedWoods.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\PrisonBreak.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\SpaceVoyage.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\ToyBox.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\1_EnchantedWoods.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\2_SpaceVoyage.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\3_PrisonBreak.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\4_ToyBox.tsx" />
+    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\5_OfficeMeeting.tsx" />
     <None Remove="ClientApp\src\registerServiceWorker.js" />
     <None Remove="ClientApp\src\common\Assets.tsx" />
     <None Remove="ClientApp\src\common\Enums.tsx" />

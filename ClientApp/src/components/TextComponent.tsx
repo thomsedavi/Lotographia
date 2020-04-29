@@ -62,6 +62,7 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
 
   props.layers.filter(layer => layer.layerType === LayerType.Phrase).map((layer: Layer, i: number) => {
     let fontFamily: string;
+    let fontSize: string = "1em";
 
     // move this util out
     switch (layer.fontFamily) {
@@ -73,6 +74,7 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
         break;
       case FontFamily.Journal:
         fontFamily = "journalregular";
+        fontSize = "1.4em";
         break;
       case FontFamily.Monospace:
       default:
@@ -82,6 +84,8 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
     // use classes
     const style: React.CSSProperties = {
       fontFamily: fontFamily,
+      fontSize: fontSize,
+      lineHeight: "1em",
       color: props.isTooLong ? "#f33" : "#000"
     };
 
@@ -93,7 +97,7 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
 
     if (layer.displayRemainder) {
       for (var j = 0; j < maxHyphens; j++) {
-        hyphen.push(<div style={{ color: "#7bf", display: "inline-block" }} key={`line${i}hyphen${j}`}>_</div>);
+        hyphen.push(<div style={{ color: i % 2 == 0 ? "#7bf" : "#bdf", display: "inline-block" }} key={`line${i}hyphen${j}`}>_</div>);
       }
     }
 

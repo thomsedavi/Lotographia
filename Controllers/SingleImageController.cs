@@ -240,40 +240,40 @@ namespace Lotographia.Controllers
             var emSize = layer.FontSize;
             var font = new Font(fontFamily, emSize, FontStyle.Bold);
 
-            var draftTextSize = graphics.MeasureString(layer.HiddenText, font);
-            var draftTextWidth = (int)Math.Ceiling(draftTextSize.Width);
-            var textHeight = (int)Math.Ceiling(draftTextSize.Height);
+            var textSize = graphics.MeasureString(layer.HiddenText, font);
+            var textWidth = (int)Math.Ceiling(textSize.Width);
+            var textHeight = (int)Math.Ceiling(textSize.Height);
 
             var stringColor = ColorTranslator.FromHtml(layer.TextColor);
             var stringBrush = new SolidBrush(stringColor);
 
             // based on MeasureString, this tends to have extra margin on right
-            var draftBitmap = new Bitmap(draftTextWidth, textHeight);
-            draftBitmap.SetResolution(300, 300);
+            var textBitmap = new Bitmap(textWidth, textHeight);
+            textBitmap.SetResolution(300, 300);
 
-            var draftGraphics = Graphics.FromImage(draftBitmap);
-            draftGraphics.DrawString(layer.HiddenText, font, stringBrush, Point.Empty);
+            var textGraphics = Graphics.FromImage(textBitmap);
+            textGraphics.DrawString(layer.HiddenText, font, stringBrush, Point.Empty);
 
-            // find out how much to reduce the margin by
-            int rightMarginOffset = getRightMarginOffset(draftBitmap);
-            var finalBitmap = new Bitmap(draftTextWidth - rightMarginOffset, textHeight);
-            finalBitmap.SetResolution(300, 300);
+            if (layer.BackgroundColor.ToLower() == "none")
+                return textBitmap;
 
-            if (layer.BackgroundColor.ToLower() != "none")
+            // find out how much to reduce the margin of the background by
+            int rightMarginOffset = getRightMarginOffset(textBitmap);
+            var backgroundColor = ColorTranslator.FromHtml(layer.BackgroundColor);
+
+            var backgroundBitmap = new Bitmap(textWidth - rightMarginOffset, textHeight);
+            backgroundBitmap.SetResolution(300, 300);
+
+            for (var x = 0; x < backgroundBitmap.Width; x++)
             {
-                var backgroundColor = ColorTranslator.FromHtml(layer.BackgroundColor);
-
-                for (var x = 0; x < finalBitmap.Width; x++)
+                for (var y = 0; y < backgroundBitmap.Height; y++)
                 {
-                    for (var y = 0; y < finalBitmap.Height; y++)
-                    {
-                        var pixel = draftBitmap.GetPixel(x, y);
-                        finalBitmap.SetPixel(x, y, pixel.A == 0 ? backgroundColor : pixel);
-                    }
+                    var pixel = textBitmap.GetPixel(x, y);
+                    backgroundBitmap.SetPixel(x, y, pixel.A == 0 ? backgroundColor : pixel);
                 }
             }
 
-            return finalBitmap;
+            return backgroundBitmap;
         }
 
         private void DrawLayer(Image image, Graphics graphics, Layer layer, Image layerImage)

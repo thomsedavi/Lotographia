@@ -65,10 +65,6 @@ export const ToyBox: GameOptionDetails = {
         {
           shownText: "wood",
           hiddenText: "evanescence"
-        },
-        {
-          shownText: "mysterious elf",
-          hiddenText: "estranged friend"
         }
       ]
     }
