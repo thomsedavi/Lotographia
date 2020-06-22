@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Lotographia.Utils
 {
-    public static class TokenUtils
+    public static class GameCodeUtils
     {
         private static readonly Random random = new Random();
         private static readonly (string, string)[] Modifiers = new (string, string)[]
@@ -20,7 +20,7 @@ namespace Lotographia.Utils
             (null, "hairy"), ("happily", "happy"), ("heavily", "heavy"), ("historically", "historic"), (null, "honest"), ("hungrily", "hungry"),
             (null, "illogical"), ("interestingly", "interesting"),
             (null, "kind"), ("kind-of", null),
-            ("largely", "large"), ("literally", "literal"), (null, "little"), ("logically", "logical"), (null, "lonely"), (null, "loud"), (null, "lovely"),
+            ("largely", "large"), ("literally", "literal"), ("logically", "logical"), (null, "lonely"), (null, "loud"), (null, "lovely"),
             ("magically", "magical"), (null, "married"), (null, "miniature"), ("moderately", "moderate"), (null, "modern"), (null, "moist"), ("morosely", "morose"),("mostly", null),
             ("naturally", "natural"), (null, "nervous"), ("not", null), ("not-very", null), (null, "notorious"),
             ("obviously", "obvious"), ("oddly", "odd"),
@@ -63,7 +63,7 @@ namespace Lotographia.Utils
             "zebra"
         };
 
-        public static bool TryCreateToken(LotographiaContext context, out string token)
+        public static bool TryCreateGameCode(LotographiaContext context, out string code)
         {
             var attempts = 0;
 
@@ -94,18 +94,18 @@ namespace Lotographia.Utils
                 
                 var noun = Nouns[random.Next(Nouns.Length)];
 
-                var newToken = $"{adverb}-{adjective}-{noun}";
+                var newCode = $"{adverb}-{adjective}-{noun}";
 
-                if (!context.MistletoeGames.Any(game => game.Token == newToken))
+                if (!context.MistletoeGames.Any(game => game.Code == newCode))
                 {
-                    token = newToken;
+                    code = newCode;
                     return true;
                 }
 
                 attempts++;
             }
 
-            token = null;
+            code = null;
             return false;
         }
 

@@ -10,14 +10,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.4" />
     <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="3.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.1.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.1.0" />
     <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="3.7.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.2" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.5.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,12 +40,6 @@
     <None Remove="ClientApp\src\App.tsx" />
     <None Remove="ClientApp\src\categories\About.tsx" />
     <None Remove="ClientApp\src\categories\Photographia.tsx" />
-    <None Remove="ClientApp\src\city\Base.tsx" />
-    <None Remove="ClientApp\src\city\levels\Final.tsx" />
-    <None Remove="ClientApp\src\city\levels\Intro.tsx" />
-    <None Remove="ClientApp\src\city\levels\Level.tsx" />
-    <None Remove="ClientApp\src\city\levels\Level1.tsx" />
-    <None Remove="ClientApp\src\city\levels\Level2.tsx" />
     <None Remove="ClientApp\src\components\CheckboxComponent.tsx" />
     <None Remove="ClientApp\src\components\ComponentContainer.tsx" />
     <None Remove="ClientApp\src\components\CustomSelectOptionComponent.tsx" />
@@ -51,16 +54,21 @@
     <None Remove="ClientApp\src\components\RadioImage.ts" />
     <None Remove="ClientApp\src\components\SelectComponent.tsx" />
     <None Remove="ClientApp\src\components\SelectOption.tsx" />
+    <None Remove="ClientApp\src\components\Style.tsx" />
     <None Remove="ClientApp\src\components\TextComponent.tsx" />
     <None Remove="ClientApp\src\index.tsx" />
+    <None Remove="ClientApp\src\mistletoe\Mistletoe.tsx" />
+    <None Remove="ClientApp\src\mistletoe\MistletoeEnums.tsx" />
+    <None Remove="ClientApp\src\mistletoe\MistletoeRequests.tsx" />
+    <None Remove="ClientApp\src\mistletoe\MistletoeResponses.tsx" />
     <None Remove="ClientApp\src\pictures\LayersTool.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeleton.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\1_EnchantedWoods.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\2_SpaceVoyage.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\3_PrisonBreak.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\4_ToyBox.tsx" />
-    <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames\5_OfficeMeeting.tsx" />
+    <None Remove="ClientApp\src\pictures\meticulousSkeletonGames\1_EnchantedWoods.tsx" />
+    <None Remove="ClientApp\src\pictures\meticulousSkeletonGames\2_SpaceVoyage.tsx" />
+    <None Remove="ClientApp\src\pictures\meticulousSkeletonGames\3_PrisonBreak.tsx" />
+    <None Remove="ClientApp\src\pictures\meticulousSkeletonGames\4_ToyBox.tsx" />
+    <None Remove="ClientApp\src\pictures\meticulousSkeletonGames\5_OfficeMeeting.tsx" />
     <None Remove="ClientApp\src\registerServiceWorker.js" />
     <None Remove="ClientApp\src\common\Assets.tsx" />
     <None Remove="ClientApp\src\common\Enums.tsx" />
@@ -79,6 +87,16 @@
     <None Update="ClientApp\src\components\HomeOld.js.map">
       <DependentUpon>HomeOld.js</DependentUpon>
     </None>
+    <None Update="ClientApp\src\mistletoe\MistletoeResponses.js">
+      <DependentUpon>MistletoeResponses.tsx</DependentUpon>
+    </None>
+    <None Update="ClientApp\src\mistletoe\MistletoeResponses.js.map">
+      <DependentUpon>MistletoeResponses.js</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">

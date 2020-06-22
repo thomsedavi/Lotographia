@@ -230,3 +230,19 @@ _Pvt_Extensions
 
 # FAKE - F# Make
 .fake/
+
+# Lotographia
+/ClientApp/src/*.js
+/ClientApp/src/*.js.map
+/ClientApp/src/categories/*.js
+/ClientApp/src/categories/*.js.map
+/ClientApp/src/common/*.js
+/ClientApp/src/common/*.js.map
+/ClientApp/src/components/*.js
+/ClientApp/src/components/*.js.map
+/ClientApp/src/mistletoe/*.js
+/ClientApp/src/mistletoe/*.js.map
+/ClientApp/src/pictures/*.js
+/ClientApp/src/pictures/*.js.map
+/ClientApp/src/pictures/meticulousSkeletonGames/*.js
+/ClientApp/src/pictures/meticulousSkeletonGames/*.js.map

@@ -1,25 +1,25 @@
 export enum FontFamily {
-  Monospace = "Monospace",
-  Serif = "Serif",
-  SansSerif = "SansSerif",
-  Journal = "Journal"
+  Monospace = "monospace",
+  Serif = "serif",
+  SansSerif = "sansSerif",
+  Journal = "journal"
 }
 
 export enum TextType {
-  Fixed = "Fixed",
-  Custom = "Custom"
+  Fixed = "fixed",
+  Custom = "custom"
 }
 
 export enum TextComponentType {
-  Hyphen = "Hyphen",
-  Return = "Return",
-  Space = "Space",
-  Word = "Word"
+  Hyphen = "hyphen",
+  Return = "return",
+  Space = "space",
+  Word = "word"
 }
 
 export enum LayerType {
-  Phrase = "Phrase",
-  Image = "Image"
+  Phrase = "phrase",
+  Image = "image"
 }
 
 export enum ImageFloat {

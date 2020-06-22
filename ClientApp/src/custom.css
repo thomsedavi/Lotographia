@@ -1,3 +1,16 @@
+:root {
+    --darkest-blue-color: #024;
+    --dark-blue-color: #048;
+    --dark-blue-hover-color: #05a;
+    --medium-blue-color: #7bf;
+    --light-blue-color: #bdf;
+    --light-blue-hover-color: #9cf;
+    --lightest-blue-color: #def;
+    --white-hover-color: #def;
+    --dark-warning-color: #600;
+    --light-warning-color: #f00;
+}
+
 @font-face {
     font-family: "journalregular";
     src: url("fonts/journal-webfont.woff") format("woff");
@@ -53,8 +66,13 @@
 }
 
 .component {
-    margin-bottom: 0.5em;
+    margin-bottom: 0.8em;
     text-align: center;
+}
+
+.component.header {
+    overflow: auto;
+    margin-bottom: 0;
 }
 
 .component.buttons {
@@ -62,15 +80,17 @@
 }
 
 .title {
-    color: #024;
+    color: var(--darkest-blue-color);
     font-size: 3em;
     font-weight: 700;
 }
 
 .subtitle {
-    color: #024;
+    color: var(--darkest-blue-color);
+    display: inline-block;
     font-size: 1.5em;
     font-weight: 700;
+    width: 75%;
 }
 
 .heading {
@@ -79,18 +99,62 @@
     text-decoration: underline;
 }
 
-.information {
-    display: inline-block;
-    font-size: 1.15em;
-    width: 75%;
-    color: #024;
+.text {
+    font-size: 1.2em;
+    font-weight: 700;
 }
 
-.footnote {
+.information {
+    display: inline-block;
+    font-size: 1.1em;
+    width: 75%;
+    color: var(--darkest-blue-color);
+}
+
+.emphasis {
+    color: var(--dark-blue-color);
+    display: inline-block;
+    font-style: italic;
+    width: 75%;
+}
+
+label {
+    color: var(--darkest-blue-color);
+    font-size: 1.15em;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+input[type=text], textarea {
+    border-color: var(--darkest-blue-color);
+}
+
+input[type=text] {
+    max-width: 16em;
+    width: 100%;
+}
+
+input[type=text].error {
+    border-color: var(--light-warning-color);
+}
+
+input[type=checkbox] {
+    margin-right: 0.5em;
+}
+
+.note {
+    color: var(--dark-blue-color);
     display: inline-block;
     font-size: 0.9em;
     width: 60%;
-    color: #024;
+}
+
+.error-message {
+    color: var(--light-warning-color);
+    display: inline-block;
+    font-size: 0.9em;
+    font-weight: 700;
+    width: 60%;
 }
 
 .nav-link {
@@ -98,8 +162,8 @@
 }
 
 .option {
-    color: #7bf;
-    border-color: #bdf;
+    color: var(--medium-blue-color);
+    border-color: var(--light-blue-color);
     border-style: solid;
     border-width: 2px;
     margin-bottom: 0.75em;
@@ -116,12 +180,12 @@
 }
 
 .option.active {
-    border-color: #7bf;
+    border-color: var(--medium-blue-color);
     color: #000;
 }
 
 .option.active.selected {
-    border-color: #bdf;
+    border-color: var(--light-blue-color);
 }
 
 .option.active:hover {
@@ -130,13 +194,13 @@
 }
 
 .option.selected {
-    background-color: #bdf;
+    background-color: var(--light-blue-color);
     color: #000;
 }
 
 .option.active.selected:hover {
-    background-color: #9cf;
-    border-color: #9cf;
+    background-color: var(--light-blue-hover-color);
+    border-color: var(--light-blue-hover-color);
 }
 
 .option .name {
@@ -154,58 +218,66 @@
     width: 6em;
 }
 
-.text {
-    font-size: 1.2em;
-    font-weight: 700;
-}
-
-.button {
-    border-color: #bdf;
+button {
     border-style: solid;
     border-width: 2px;
-    color: #7bf;
     display: inline-block;
     font-weight: 700;
     padding: 4px 12px;
 }
 
-.button:not(:last-child) {
+button:not(:last-child) {
     margin-right: 8px;
 }
 
-.button.active:hover {
-    cursor: pointer;
+button:disabled {
+    background-color: white;
+    border-color: var(--light-blue-color);
+    color: var(--medium-blue-color);
 }
 
-.button.action.active {
-    background-color: #048;
-    border-color: #000;
+button.navigation:enabled {
+    background-color: var(--light-blue-color);
+    border-color: var(--dark-blue-color);
+    color: black;
 }
 
-.button.action.active:hover {
-    background-color: #05a;
+button.navigation:enabled:hover {
+    background-color: var(--light-blue-hover-color);
 }
 
-
-.button.navigation.active {
-    background-color: #bdf;
-    border-color: #048;
-    color: #000;
+button.action:enabled {
+    background-color: var(--dark-blue-color);
+    border-color: black;
+    color: var(--medium-blue-color);
 }
 
-.button.navigation.active:hover {
-    background-color: #9cf;
+button.action:enabled:hover {
+    background-color: var(--dark-blue-hover-color);
+}
+
+button.header {
+    background-color: white;
+    border-color: var(--dark-blue-color);
+    color: var(--dark-blue-color);
+    padding: 0 6px;
+    float: right;
+    font-size: 0.9em;
+}
+
+button.header:hover {
+    background-color: var(--white-hover-color);
 }
 
 .character {
-    background-color: #000;
-    color: #fff;
+    background-color: black;
+    color: white;
     display: inline-block;
 }
 
 .character.invalid {
     background-color: #f33;
-    color: #000;
+    color: black;
 }
 
 .character.pad-left {
@@ -217,13 +289,18 @@
 }
 
 .character.empty {
-    background-color: #bdf;
+    background-color: var(--light-blue-color);
 }
 
 .character.fixed {
-    color: #bdf;
+    color: var(--light-blue-color);
 }
 
 .character.fixed.invalid {
-    color: #600;
+    color: var(--dark-warning-color);
+}
+
+code {
+    color: var(--dark-blue-color);
+    background-color: var(--lightest-blue-color);
 }

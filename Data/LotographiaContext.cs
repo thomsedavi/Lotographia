@@ -14,7 +14,7 @@ namespace Lotographia.Data
         {
             var mistletoeGame = modelBuilder.Entity<MistletoeGame>();
 
-            mistletoeGame.Property(b => b.Token)
+            mistletoeGame.Property(b => b.Code)
                 .IsRequired()
                 .HasMaxLength(255);
 
@@ -36,41 +36,41 @@ namespace Lotographia.Data
                 .HasColumnType("datetime2")
                 .HasDefaultValueSql("getdate()");
 
-            mistletoeGame.Property(b => b.PublishedDate)
+            mistletoeGame.Property(b => b.EndedDate)
                 .HasColumnType("datetime2");
 
-            mistletoeGame.HasIndex(b => b.Token)
+            mistletoeGame.HasIndex(b => b.Code)
                 .IsUnique();
 
-            var mistletoePlayer = modelBuilder.Entity<MistletoePlayer>();
+            var mistletoeParticipant = modelBuilder.Entity<MistletoeParticipant>();
 
-            mistletoePlayer.Property(b => b.Name)
+            mistletoeParticipant.Property(b => b.Name)
                 .IsRequired()
                 .HasMaxLength(255);
 
-            mistletoePlayer.Property(b => b.Biography)
+            mistletoeParticipant.Property(b => b.Biography)
                 .HasMaxLength(4000);
 
-            mistletoePlayer.Property(b => b.HashedPassword)
+            mistletoeParticipant.Property(b => b.HashedPassword)
                 .HasMaxLength(255);
 
-            mistletoePlayer.Property(b => b.Settings)
+            mistletoeParticipant.Property(b => b.Settings)
                 .IsRequired();
 
-            mistletoePlayer.Property(b => b.Version)
+            mistletoeParticipant.Property(b => b.Version)
                 .IsRequired()
                 .HasDefaultValue(0);
 
-            mistletoePlayer.HasOne(a => a.PrecedingPlayer)
+            mistletoeParticipant.HasOne(a => a.PrecedingPlayer)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Restrict);
             
-            mistletoePlayer.HasOne(a => a.FollowingPlayer)
+            mistletoeParticipant.HasOne(a => a.FollowingPlayer)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Restrict);
         }
 
         public DbSet<MistletoeGame> MistletoeGames { get; set; }
-        public DbSet<MistletoePlayer> MistletoePlayers { get; set; }
+        public DbSet<MistletoeParticipant> MistletoeParticipants { get; set; }
     }
 }

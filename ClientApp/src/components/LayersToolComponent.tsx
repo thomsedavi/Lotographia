@@ -203,9 +203,9 @@ const LayerComponent: React.StatelessComponent<LayerComponentProps> = (props) =>
       Save
     </div>
 
-    <div className="button action active" onClick={() => props.deleteLayer(props.index)}>
+    <button className="action" onClick={() => props.deleteLayer(props.index)}>
       Delete
-    </div>
+    </button>
   </div>;
 }
 
@@ -270,13 +270,13 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
   });
 
   children.push(<div className="component" key="addText">
-    <div className="button action active" onClick={() => {
+    <button className="action" onClick={() => {
       var layers = props.layers;
 
       layers.push({ ...DefaultNewLayer });
 
       props.updateLayers(layers);
-    }}>Add Text</div>
+    }}>Add Text</button>
   </div>);
 
   children.push(<div className="component" key="updateImage">

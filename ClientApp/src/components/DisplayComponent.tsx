@@ -12,12 +12,11 @@ const DisplayComponent: React.StatelessComponent<DisplayComponentProps> = (props
 
   children.push(<div className="component">
     <img src={props.previewURL} style={{ marginBottom: "0.5em", width: "100%" }} />
-  </div>);
-
-  props.information && children.push(<div className="component">
-    <div className="footnote">
-      {props.information}
-    </div>
+    {props.information &&
+      <div className="note">
+        {props.information}
+      </div>
+    }
   </div>);
 
   return <ComponentContainer
