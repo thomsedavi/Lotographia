@@ -11,7 +11,7 @@ namespace Lotographia.Services
 {
     public interface IParticipantService
     {
-        string GetToken(string gameType, string participantId, string participantType);
+        string GetToken(string gameId, string gameType, string participantId, string participantType);
     }
 
     public class ParticipantService : IParticipantService
@@ -23,7 +23,7 @@ namespace Lotographia.Services
             _appSettings = appSettings.Value;
         }
 
-        public string GetToken(string gameType, string participantId, string participantType)
+        public string GetToken(string gameId, string gameType, string participantId, string participantType)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
@@ -31,6 +31,7 @@ namespace Lotographia.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
+                    new Claim(ClaimType.GameId, gameId),
                     new Claim(ClaimType.GameType, gameType),
                     new Claim(ClaimType.ParticipantId, participantId),
                     new Claim(ClaimType.ParticipantType, participantType)
@@ -45,6 +46,7 @@ namespace Lotographia.Services
 
     public class ClaimType
     {
+        public const string GameId = "GameId";
         public const string GameType = "GameType";
         public const string ParticipantId = "ParticipantId";
         public const string ParticipantType = "ParticipantType";
@@ -52,7 +54,7 @@ namespace Lotographia.Services
 
     public class GameType
     {
-        public const string Mistletoe = "Mistletoe";
+        public const string PaperFollies = "PaperFollies";
     }
 
     public class ParticipantType

@@ -96,7 +96,7 @@ namespace Lotographia.Utils
 
                 var newCode = $"{adverb}-{adjective}-{noun}";
 
-                if (!context.MistletoeGames.Any(game => game.Code == newCode))
+                if (!context.PaperFolliesGames.Any(game => game.Code == newCode))
                 {
                     code = newCode;
                     return true;

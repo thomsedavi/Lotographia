@@ -8,7 +8,7 @@ import { Photographia } from "./categories/Photographia";
 import { CapitalParty } from "./pictures/CapitalParty";
 import { MeticulousSkeleton } from "./pictures/MeticulousSkeleton";
 import { LayersTool } from "./pictures/LayersTool";
-import { Mistletoe } from "./mistletoe/Mistletoe";
+import { PaperFollies } from "./paperFollies/PaperFollies";
 import { Style } from "./components/Style";
 
 import "./custom.css"
@@ -24,7 +24,7 @@ export default class App extends React.Component {
         <Route path="/capital-party" component={CapitalParty} />
         <Route path="/meticulous-skeleton" component={MeticulousSkeleton} />
         <Route path="/layers-tool" component={LayersTool} />
-        <Route path="/mistletoe" component={Mistletoe} />
+        <Route path="/paper-follies" component={PaperFollies} />
         <Route path="/style" component={Style} />
       </Layout>
     );

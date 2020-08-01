@@ -16,8 +16,8 @@ enum Option1 {
 }
 
 enum Option2 {
-  Alien = "octopus",
-  Lizard = "robot"
+  Alien = "alien",
+  Lizard = "lizard"
 }
 
 enum Option3 {
@@ -660,7 +660,7 @@ export class CapitalParty extends React.Component<any, CapitalPartyState> {
           selectOptions: [
             { description: "Don't touch the floor! A classic game where the floor is literally lava", id: Option3.Lava, name: "The Floor Is Lava" },
             { description: "Don't touch the walls! A variant of the original game intended to discourage loafing", id: Option3.Acid, name: "The Walls Are Acid" },
-            { description: "Don't touch the ceiling! An intenionally easy game for beginners", id: Option3.Electricity, name: "The Ceiling Is Electrity" },
+            { description: "Don't touch the ceiling! An intentionally easy game for beginners", id: Option3.Electricity, name: "The Ceiling Is Electricity" },
             { description: "Don't touch anything! A metaphor for life", id: Option3.Terrible, name: "Everything Is Terrible" }
           ],
           options: this.state.options3,

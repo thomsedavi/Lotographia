@@ -12,65 +12,55 @@ namespace Lotographia.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            var mistletoeGame = modelBuilder.Entity<MistletoeGame>();
+            var paperFolliesGame = modelBuilder.Entity<PaperFolliesGame>();
 
-            mistletoeGame.Property(b => b.Code)
+            paperFolliesGame.Property(b => b.Code)
                 .IsRequired()
                 .HasMaxLength(255);
 
-            mistletoeGame.Property(b => b.Title)
+            paperFolliesGame.Property(b => b.Title)
                 .IsRequired()
                 .HasMaxLength(255);
 
-            mistletoeGame.Property(b => b.Description)
+            paperFolliesGame.Property(b => b.Description)
                 .HasMaxLength(4000);
 
-            mistletoeGame.Property(b => b.CharacterLimit)
-                .IsRequired();
-
-            mistletoeGame.Property(b => b.Settings)
-                .IsRequired();
-
-            mistletoeGame.Property(b => b.CreatedDate)
+            paperFolliesGame.Property(b => b.CreatedDate)
                 .IsRequired()
                 .HasColumnType("datetime2")
                 .HasDefaultValueSql("getdate()");
 
-            mistletoeGame.Property(b => b.EndedDate)
+            paperFolliesGame.Property(b => b.EndedDate)
                 .HasColumnType("datetime2");
 
-            mistletoeGame.HasIndex(b => b.Code)
+            paperFolliesGame.HasIndex(b => b.Code)
                 .IsUnique();
 
-            var mistletoeParticipant = modelBuilder.Entity<MistletoeParticipant>();
+            var paperFolliesParticipant = modelBuilder.Entity<PaperFolliesParticipant>();
 
-            mistletoeParticipant.Property(b => b.Name)
+            paperFolliesParticipant.Property(b => b.Name)
                 .IsRequired()
                 .HasMaxLength(255);
 
-            mistletoeParticipant.Property(b => b.Biography)
+            paperFolliesParticipant.Property(b => b.Biography)
                 .HasMaxLength(4000);
 
-            mistletoeParticipant.Property(b => b.HashedPassword)
+            paperFolliesParticipant.Property(b => b.HashedPassword)
                 .HasMaxLength(255);
 
-            mistletoeParticipant.Property(b => b.Settings)
-                .IsRequired();
+            paperFolliesParticipant.Property(b => b.Content)
+                .HasMaxLength(4000);
 
-            mistletoeParticipant.Property(b => b.Version)
-                .IsRequired()
-                .HasDefaultValue(0);
-
-            mistletoeParticipant.HasOne(a => a.PrecedingPlayer)
+            paperFolliesParticipant.HasOne(a => a.PrecedingPlayer)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Restrict);
             
-            mistletoeParticipant.HasOne(a => a.FollowingPlayer)
+            paperFolliesParticipant.HasOne(a => a.FollowingPlayer)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Restrict);
         }
 
-        public DbSet<MistletoeGame> MistletoeGames { get; set; }
-        public DbSet<MistletoeParticipant> MistletoeParticipants { get; set; }
+        public DbSet<PaperFolliesGame> PaperFolliesGames { get; set; }
+        public DbSet<PaperFolliesParticipant> PaperFolliesParticipants { get; set; }
     }
 }

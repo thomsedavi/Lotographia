@@ -14,7 +14,7 @@ interface LayersToolState {
 }
 
 export class LayersTool extends React.Component<any, LayersToolState> {
-  base: string = "MeticulousSkeleton/PrisonBreak.png";
+  base: string = "MeticulousSkeleton/OfficeMeeting.png";
   height: number = 600;
   width: number = 900;
 

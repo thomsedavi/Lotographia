@@ -8,12 +8,12 @@ export const EnchantedWoods: GameOptionDetails = {
   footnote: `Photo taken at the "Home Alone End of Summer Fest" at the Hataitai Bowling Club on the 29th of February 2020. Event organised by Home Alone Music.`,
   substituteTexts: [
     {
-      displayedText: "the secret forest dell",
+      displayedText: "forest dell",
       isRequired: true,
       variantTexts: [
         {
-          shownText: "the secret forest dell",
-          hiddenText: "the Hataitai Bowling Club"
+          shownText: "forest dell",
+          hiddenText: "bowling club"
         }
       ]
     },

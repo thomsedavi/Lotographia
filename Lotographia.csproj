@@ -38,6 +38,11 @@
 
   <ItemGroup>
     <None Remove="ClientApp\src\App.tsx" />
+    <None Remove="ClientApp\src\paperFollies\PaperFollies.tsx" />
+    <None Remove="ClientApp\src\paperFollies\PaperFolliesEnums.tsx" />
+    <None Remove="ClientApp\src\paperFollies\PaperFolliesInterfaces.tsx" />
+    <None Remove="ClientApp\src\paperFollies\PaperFolliesRequests.tsx" />
+    <None Remove="ClientApp\src\paperFollies\PaperFolliesResponses.tsx" />
     <None Remove="ClientApp\src\categories\About.tsx" />
     <None Remove="ClientApp\src\categories\Photographia.tsx" />
     <None Remove="ClientApp\src\components\CheckboxComponent.tsx" />
@@ -57,10 +62,6 @@
     <None Remove="ClientApp\src\components\Style.tsx" />
     <None Remove="ClientApp\src\components\TextComponent.tsx" />
     <None Remove="ClientApp\src\index.tsx" />
-    <None Remove="ClientApp\src\mistletoe\Mistletoe.tsx" />
-    <None Remove="ClientApp\src\mistletoe\MistletoeEnums.tsx" />
-    <None Remove="ClientApp\src\mistletoe\MistletoeRequests.tsx" />
-    <None Remove="ClientApp\src\mistletoe\MistletoeResponses.tsx" />
     <None Remove="ClientApp\src\pictures\LayersTool.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeleton.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames.tsx" />
@@ -86,12 +87,6 @@
     </None>
     <None Update="ClientApp\src\components\HomeOld.js.map">
       <DependentUpon>HomeOld.js</DependentUpon>
-    </None>
-    <None Update="ClientApp\src\mistletoe\MistletoeResponses.js">
-      <DependentUpon>MistletoeResponses.tsx</DependentUpon>
-    </None>
-    <None Update="ClientApp\src\mistletoe\MistletoeResponses.js.map">
-      <DependentUpon>MistletoeResponses.js</DependentUpon>
     </None>
   </ItemGroup>
 
