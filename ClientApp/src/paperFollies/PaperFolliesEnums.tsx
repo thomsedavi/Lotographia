@@ -14,7 +14,7 @@ export enum Section {
   Game = "Game",
   Admin = "admin",
   About = "about",
-  Reset = "reset"
+  ConfirmReset = "confirmreset"
 }
 
 export enum GamePage {
@@ -26,8 +26,7 @@ export enum GamePage {
   GameDescription = "gameDescription",
   GameType = "gameType",
   GameCharacterLimit = "gameCharacterLimit",
-  GameCodeJoin = "gameCodeJoin",
-  GameCodeView = "gameCodeView",
+  GameCode = "gameCode",
   GameJoinIntro = "gameJoinIntro",
   PlayerName = "playerName",
   PlayerBiography = "playerBiography",
@@ -39,7 +38,16 @@ export enum GamePage {
   NotAdded = "notAdded",
   Entry = "entry",
   WaitingForEnd = "waitingForEnd",
-  Final = "final"
+  Final = "final",
+  Details = "details",
+  RetrievingGame = "retrievingGame"
+}
+
+export enum AdminPage {
+  Main = "main",
+  ConfirmBeginEnding = "confirmBeginEnding",
+  ConfirmEnd = "confirmEnd",
+  ConfirmShare = "confirmShare"
 }
 
 export enum EntryView {

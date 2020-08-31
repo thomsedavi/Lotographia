@@ -20,6 +20,7 @@ namespace Lotographia.Controllers
         {
             // actually don't want to do this every time, make happen globally
             PrivateFontCollection = new PrivateFontCollection();
+            PrivateFontCollection.AddFontFile($"ClientApp/{Directory}/Fonts/GandhiSerif-Regular-webfont.ttf");
             PrivateFontCollection.AddFontFile($"ClientApp/{Directory}/Fonts/journal-webfont.ttf");
         }
 
@@ -46,9 +47,10 @@ namespace Lotographia.Controllers
 
                 var fontFamily = line.FontFamily switch
                 {
-                    "SansSerif" => new FontFamily(GenericFontFamilies.SansSerif),
-                    "Serif" => new FontFamily(GenericFontFamilies.Serif),
-                    "Journal" => PrivateFontCollection.Families[0],
+                    "sansSerif" => new FontFamily(GenericFontFamilies.SansSerif),
+                    "serif" => new FontFamily(GenericFontFamilies.Serif),
+                    "gandhi" => PrivateFontCollection.Families[0],
+                    "journal" => PrivateFontCollection.Families[1],
                     _ => new FontFamily(GenericFontFamilies.Monospace),
                 };
 
@@ -231,9 +233,10 @@ namespace Lotographia.Controllers
         {
             var fontFamily = layer.FontFamily switch
             {
-                "SansSerif" => new FontFamily(GenericFontFamilies.SansSerif),
-                "Serif" => new FontFamily(GenericFontFamilies.Serif),
-                "Journal" => PrivateFontCollection.Families[0],
+                "sansSerif" => new FontFamily(GenericFontFamilies.SansSerif),
+                "serif" => new FontFamily(GenericFontFamilies.Serif),
+                "gandhi" => PrivateFontCollection.Families[0],
+                "journal" => PrivateFontCollection.Families[1],
                 _ => new FontFamily(GenericFontFamilies.Monospace),
             };
 

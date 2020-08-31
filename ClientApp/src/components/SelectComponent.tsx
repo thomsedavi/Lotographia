@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { ComponentContainer, ComponentProps } from './ComponentContainer';
 import { SelectOption } from './SelectOption';
+import { ImageLoading } from '../common/Assets';
 
 export interface SelectComponentProps extends ComponentProps {
   options: SelectOption[],
@@ -9,6 +10,7 @@ export interface SelectComponentProps extends ComponentProps {
   selectedName?: string,
   selectedDescription?: string,
   selectedImageUrl?: string,
+  hasImage: boolean,
   selectTitle: string
 }
 
@@ -26,11 +28,12 @@ const SelectComponent: React.StatelessComponent<SelectComponentProps> = (props) 
   </div>);
 
   props.selectedName && props.selectedDescription && children.push(<div className="component">
-    <div className="option selected">
-      {props.selectedImageUrl && <img className="image right" src={props.selectedImageUrl} />} 
+    <button className="option selected no-hover">
+      {props.hasImage && props.selectedImageUrl && <img className="image right" src={props.selectedImageUrl} />}
+      {props.hasImage && !props.selectedImageUrl && ImageLoading} 
       {props.selectedName && <div className="name">{props.selectedName}</div>}
       {props.selectedDescription && <div className="description">{props.selectedDescription}</div>}
-    </div>
+    </button>
   </div>);
 
   return <ComponentContainer

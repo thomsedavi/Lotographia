@@ -12,6 +12,7 @@
     --light-blue-color: #bdf;
     --light-blue-hover-color: #9cf;
     --lightest-blue-color: #def;
+    --lightest-blue-hover-color: #bdf;
     /* green */
     --dark-green-color: #480;
     --light-green-color: #dfb;
@@ -21,6 +22,13 @@
 @font-face {
     font-family: "journalregular";
     src: url("fonts/journal-webfont.woff") format("woff");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "gandhi_serifregular";
+    src: url("fonts/GandhiSerif-Regular-webfont.woff") format("woff");
     font-weight: normal;
     font-style: normal;
 }
@@ -36,18 +44,18 @@
         max-width: 550px;
     }
 
-    .option .image {
+    button.option .image {
         height: 4em;
         width: 4em;
     }
 
-    .option .image.left {
+    button.option .image.left {
         float: left;
         margin-left: 0.25em;
         margin-right: 0.75em;
     }
 
-    .option .image.right {
+    button.option .image.right {
         float: right;
         margin-left: 0.7em;
         margin-right: 0.25em;
@@ -72,6 +80,10 @@
     }
 }
 
+.section {
+    margin-bottom: 3em;
+}
+
 .component {
     margin-bottom: 0.8em;
     text-align: center;
@@ -79,7 +91,14 @@
 
 .component.headers, .component.guides {
     overflow: auto;
-    margin-bottom: 0;
+}
+
+.component.headers {
+    margin-bottom: 0.5em;
+}
+
+.component.guides {
+    margin-bottom: 1em;
 }
 
 .component.buttons {
@@ -168,59 +187,65 @@ input[type=checkbox] {
     font-size: 1.25em;
 }
 
-.option {
-    color: var(--medium-blue-color);
-    border-color: var(--light-blue-color);
+button.option {
+    background-color: white;
     border-style: solid;
     border-width: 2px;
     margin-bottom: 0.75em;
     overflow: auto;
     padding: 0.5em 0.75em;
-}
-
-.option:first-child {
-    margin-top: 0.75em;
-}
-
-.option:last-child {
-    margin-bottom: 1em;
-}
-
-.option.active {
+    width: 100%;
     border-color: var(--medium-blue-color);
-    color: #000;
+    color: black;
 }
 
-.option.active.selected {
+button.no-hover {
+    cursor: initial;
+}
+
+button.option:disabled {
+    color: var(--medium-blue-color);
     border-color: var(--light-blue-color);
 }
 
-.option.active:hover {
-    background-color: #def;
-    cursor: pointer;
+button.option:first-child {
+    margin-top: 0.75em;
 }
 
-.option.selected {
+button.option:last-child {
+    margin-bottom: 1em;
+}
+
+button.option.selected {
+    border-color: var(--light-blue-color);
+}
+
+button.option:not(:disabled):not(.no-hover):hover {
+    background-color: #def;
+}
+
+button.option.selected {
     background-color: var(--light-blue-color);
     color: #000;
 }
 
-.option.active.selected:hover {
+button.option.selected:not(.no-hover):hover {
     background-color: var(--light-blue-hover-color);
     border-color: var(--light-blue-hover-color);
 }
 
-.option .name {
+button.option .name {
     font-size: 1.25em;
     font-weight: 700;
     text-align: center;
 }
 
-.option .description {
+button.option .description {
     text-align: center;
+    font-weight: 400;
 }
 
-.option .image {
+button.option .image {
     height: 6em;
     width: 6em;
 }
@@ -238,48 +263,59 @@ button:not(.left):not(.right):not(:last-child), .divider:not(.left):not(.right):
 }
 
 button.left {
+    float: left;
     margin-right: 8px;
 }
 
 button.right {
+    float: right;
     margin-left: 8px;
 }
 
-button:disabled {
+.component.buttons button:disabled {
     background-color: white;
     border-color: var(--light-blue-color);
     color: var(--medium-blue-color);
 }
 
-button.navigation:enabled {
+.component.buttons button.navigation:enabled {
     background-color: var(--light-blue-color);
     border-color: var(--dark-blue-color);
     color: black;
 }
 
-button.navigation:enabled:hover {
+.component.buttons button.navigation:enabled:hover, .component.buttons button.navigation:enabled:focus {
     background-color: var(--light-blue-hover-color);
 }
 
-button.action:enabled {
+.component.buttons button:enabled {
     background-color: var(--dark-blue-color);
     border-color: black;
     color: var(--medium-blue-color);
 }
 
-button.action:enabled:hover {
+.component.buttons button.action:enabled:hover, .component.buttons button.action:enabled:focus {
     background-color: var(--dark-blue-hover-color);
 }
 
 .component.headers button {
-    background-color: white;
-    border-color: var(--dark-blue-color);
-    color: var(--dark-blue-color);
     padding: 0 6px;
     font-size: 0.9em;
 }
 
-.component.headers button:hover {
+.component.headers button:enabled {
+    background-color: white;
+    border-color: var(--dark-blue-color);
+    color: var(--dark-blue-color);
+}
+
+.component.headers button:disabled {
+    background-color: var(--dark-blue-color);
+    border-color: var(--dark-blue-color);
+    color: white;
+}
+
+.component.headers button:enabled:hover, .component.headers button:enabled:focus {
     background-color: var(--white-hover-color);
 }
 
@@ -309,11 +345,11 @@ button.action:enabled:hover {
     color: var(--dark-green-color);
 }
 
-.component.guides button:enabled:hover {
+.component.guides button:enabled:hover, .component.guides button:enabled:focus {
     background-color: var(--light-blue-hover-color);
 }
 
-.component.guides button.highlight:enabled:hover {
+.component.guides button.highlight:enabled:hover, .component.guides button.highlight:enabled:focus {
     background-color: var(--light-green-hover-color);
 }
 
@@ -372,8 +408,8 @@ code {
 }
 
 .box-item {
-    background-color: var(--light-blue-color);
-    border: 1px solid var(--medium-blue-color);
+    background-color: var(--lightest-blue-color);
+    border-bottom: 1px solid var(--medium-blue-color);
     color: var(--darkest-blue-color);
     cursor: pointer;
     font-weight: 700;
@@ -388,7 +424,7 @@ code {
 }
 
 .box-item:not(.selected):hover {
-    background-color: var(--light-blue-hover-color);
+    background-color: var(--lightest-blue-hover-color);
 }
 
 .box-footer {
@@ -399,4 +435,28 @@ code {
     height: 5em;
     overflow-y: auto;
     padding: 0.2em 0;
+}
+
+.help-container {
+    background-color: var(--lightest-blue-color);
+    border: 1px solid var(--medium-blue-color);
+    padding: 0.5em 1.5em;
+    position: relative;
+}
+
+.help-message {
+    color: var(--dark-blue-color);
+    font-size: 0.9em;
+    font-weight: 700;
+}
+
+.help-close {
+    color: var(--medium-blue-color);
+    cursor: pointer;
+    font-size: 0.8em;
+    font-weight: 700;
+    padding: 0.5em;
+    position: absolute;
+    right: 0;
+    top: -0.5em;
 }

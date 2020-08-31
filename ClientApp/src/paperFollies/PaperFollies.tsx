@@ -1,18 +1,19 @@
 import * as React from "react";
 import { CreateGameRequest, CreateParticipantRequest, LoginRequest, PutContentRequest } from "./PaperFolliesRequests";
-import { GetGameFromCodeResponse, GetFinalFromCodeResponse, GetStartGamePlayerResponse, GetAdminStateResponse, GetPlayerStateResponse, PostParticipantResponse, LoginParticipantResponse, GetParticipantsResponse, PutAddPlayerResponse, GetGameStateResponse, PostGameResponse, GetParticipantResponse, ErrorResponse, PutStartGameResponse, PutEndGameResponse } from "./PaperFolliesResponses";
-import { GameMode, GameType, Section, GamePage, EntryView, FinalView } from "./PaperFolliesEnums";
-import { Game, GameState, Participant, ParticipantAttributes, PlayerSummary, PlayerState } from "./PaperFolliesInterfaces";
+import { GetGameFromCodeData, GetFinalFromCodeData, GetFinalContents, GetStartGamePlayerData, GetAdminStateData, GetPlayerStateData, PostParticipantData, PostLoginParticipantData, GetParticipantsData, PutAddPlayerData, GetGameStateData, PostGameData, GetParticipantData, ErrorData, PutStartGameData, PutEndGameData } from "./PaperFolliesResponses";
+import { GameMode, GameType, Section, GamePage, AdminPage, EntryView, FinalView } from "./PaperFolliesEnums";
+import { Game, Participant, ParticipantAttributes, PlayerSummary, PlayerState } from "./PaperFolliesInterfaces";
 
 interface PaperFolliesState {
-  gameMode?: GameMode, // admin or player
+  gameMode?: GameMode, // admin, player or reader
   section: Section,
   gamePage: GamePage,
+  adminPage: AdminPage,
   entryView: EntryView,
   finalView: FinalView,
   game: Game,
   characterLimitInput: string,
-  contentOld: string,
+  contentOld: string, // to compare for differences
   participant: Participant,
   participants: ParticipantAttributes[],
   finalContents: string[],
@@ -27,8 +28,10 @@ interface PaperFolliesState {
   pollingData: boolean, // based on regular updates
   selectedWaitingPlayerId: number,
   selectedAddedPlayerId: number,
+  selectedLoginPlayerId: number,
   isLoggedIn: boolean,
-  playerSummaries: PlayerSummary[]
+  playerSummaries: PlayerSummary[],
+  shownInfos: { [infoId: string]: boolean }
 }
 
 export class PaperFollies extends React.Component<any, PaperFolliesState> {
@@ -53,7 +56,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           isEnded: false,
           isEnding: false,
           isStarted: false,
-          isPublished: false
+          isShared: false
         }
       },
       characterLimitInput: "500",
@@ -101,14 +104,19 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
       pollingData: false,
       section: Section.Game,
       gamePage: localStorage.getItem('bearerPaperFollies') ? GamePage.BearerFound : GamePage.Intro,
+      adminPage: AdminPage.Main,
       entryView: EntryView.Player,
-      finalView: FinalView.Details,
+      finalView: FinalView.Contents,
       participants: [],
       errorMessage: "",
       selectedAddedPlayerId: 0,
       selectedWaitingPlayerId: 0,
+      selectedLoginPlayerId: 0,
       isLoggedIn: false,
-      playerSummaries: []
+      playerSummaries: [],
+      shownInfos: {
+        "info1": true
+      }
     };
   }
 
@@ -126,38 +134,15 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
         .then((response: Response) => {
           if (response.status === 200) {
             response.json()
-              .then((data: GetParticipantResponse) => {
-                const gamePage: GamePage = data.participant.attributes.isAdmin ?
-                  (!data.game.state.isStarted ? GamePage.GameReady :
-                    (data.game.state.isEnded ? GamePage.Final :
-                      (data.participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry))) :
-                  (!data.participant.attributes.isAdded ? GamePage.NotAdded :
-                    (!data.game.state.isStarted ? GamePage.WaitingForStart :
-                      (data.game.state.isEnded ? GamePage.Final :
-                        (data.participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry))));
-
-                this.setState({
-                  isLoggedIn: true,
-                  section: Section.Game,
-                  gamePage: gamePage,
-                  game: data.game,
-                  participant: data.participant,
-                  participants: data.participants,
-                  contentOld: data.participant.state.content,
-                  precedingPlayerState: data.precedingPlayerState,
-                  displayedPrecedingPlayerState: data.precedingPlayerState,
-                  followingPlayerState: data.followingPlayerState,
-                  displayedFollowingPlayerState: data.followingPlayerState,
-                  finalContents: data.finalContents
-                }, this.setSelectedDisplayedPlayers);
+              .then((data: GetParticipantData) => {
+                this.setLoginState(data);
               })
           } else {
-            response.json()
-              .then((errorResponse: ErrorResponse) => {
-                this.setState({
-                  errorMessage: errorResponse.title
-                });
-              })
+            localStorage.removeItem('bearerPaperFollies');
+
+            this.setState({
+              gamePage: GamePage.Intro
+            });
           }
         });
     } else if (searchParams.get("join-game")) {
@@ -166,17 +151,17 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
       this.setState({
         section: Section.Game,
-        gamePage: GamePage.GameCodeJoin,
+        gamePage: GamePage.RetrievingGame,
         game: game,
         gameMode: GameMode.Player
-      });
+      }, () => this.getGameFromCode(() => this.changeGamePage(GamePage.GameJoinIntro), () => this.changeGamePage(GamePage.GameCode, false)));
     } else if (searchParams.get("view-game")) {
       const game = this.state.game;
       game.attributes.code = searchParams.get("view-game")!;
 
       this.setState({
         section: Section.Game,
-        gamePage: GamePage.GameCodeView,
+        gamePage: GamePage.GameCode,
         game: game,
         gameMode: GameMode.Reader
       });
@@ -194,7 +179,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
         else if (!this.state.game.state.isEnded) {
           if (this.state.participant.attributes.isAdmin) {
             this.getAdminState();
-          } else if (this.state.participant.attributes.isPlayer) {
+          } else if (this.state.participant.attributes.isAdded) {
             this.getPlayerState();
           }
         }
@@ -211,29 +196,17 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   }
 
   initialiseDefaultLoginParticipant = () => {
-    this.changeParticipant(this.state.participants[0].id.toString());
+    this.changeLoginParticipant(this.state.participants[0].id);
 
     this.setState({
       gamePage: GamePage.LogInPlayer
     });
   }
 
-  changeParticipant = (participantId: string) => {
-    //const participant: Participant =  this.state.participants.filter(p => p.id === Number(participantId))[0];
-    const participant: Participant = {
-      attributes: this.state.participants.filter(p => p.id === Number(participantId))[0],
-      state: {
-        content: "",
-        contentVersion: 0,
-        isEnded: false
-      }
-    };
-
-    if (participant !== undefined) {
-      this.setState({
-        participant: participant
-      });
-    }
+  changeLoginParticipant = (participantId: number) => {
+    this.setState({
+      selectedLoginPlayerId: participantId
+    });
   }
 
   changeSelectedAddedPlayerId = (selectedAddedPlayerId: number) => {
@@ -256,24 +229,6 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     return this.state.participants.filter(p => p.isPlayer && p.isAdded);
   }
 
-  setSelectedDisplayedPlayers = () => { // TODO might not need this
-    let selectedWaitingPlayerId = this.state.selectedWaitingPlayerId;
-    let selectedAddedPlayerId = this.state.selectedAddedPlayerId;
-
-    if (selectedWaitingPlayerId === 0 && this.waitingPlayers().length > 0) {
-      selectedWaitingPlayerId = this.waitingPlayers()[0].id;
-    }
-
-    if (selectedAddedPlayerId === 0 && this.addedPlayers().length > 0) {
-      selectedAddedPlayerId = this.addedPlayers()[0].id;
-    }
-
-    this.setState({
-      selectedWaitingPlayerId: selectedWaitingPlayerId,
-      selectedAddedPlayerId: selectedAddedPlayerId
-    });
-  }
-
   changeSection = (section: Section) => {
     this.setState({
       errorMessage: "",
@@ -281,11 +236,19 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     });
   }
 
-  changeGamePage = (gamePage: GamePage) => {
-    this.setState({
-      errorMessage: "",
+  changeGamePage = (gamePage: GamePage, clearMessage: boolean = true) => {
+    this.setState(prevState => ({
+      errorMessage: clearMessage ? "" : prevState.errorMessage,
       section: Section.Game,
       gamePage: gamePage
+    }));
+  }
+
+  changeAdminPage = (adminPage: AdminPage) => {
+    this.setState({
+      errorMessage: "",
+      section: Section.Admin,
+      adminPage: adminPage
     });
   }
 
@@ -329,7 +292,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   updateContent = (isFinal: boolean) => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       const body: PutContentRequest = {
@@ -358,11 +322,14 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             this.setState({
               participant: participant,
               contentOld: participant.state.content.trim(),
-              gamePage: participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry
+              section: participant.state.isEnded && participant.attributes.isAdmin ? Section.Admin : Section.Game,
+              gamePage: !participant.attributes.isAdded ? GamePage.Details :
+                (participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry),
+              errorMessage: ""
             });
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -373,26 +340,22 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   }
 
   updatePrecedingContent = () => {
-    const precedingState = this.state.precedingPlayerState;
-
-    this.setState({
-      displayedPrecedingPlayerState: precedingState
-    });
+    this.setState(prevState => ({
+      displayedPrecedingPlayerState: prevState.precedingPlayerState
+    }));
   }
 
   updateFollowingContent = () => {
-    const followingState = this.state.followingPlayerState;
-
-    this.setState({
-      displayedFollowingPlayerState: followingState
-    });
+    this.setState(prevState => ({
+      displayedFollowingPlayerState: prevState.followingPlayerState
+    }));
   }
 
-
-  startGame = () => {
+  startGameAdmin = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       fetch(`api/paperFollies/game/start/admin`, {
@@ -409,37 +372,24 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((data: PutStartGameResponse) => {
-                const participant: Participant = {
-                  attributes: data.participants.filter(p => p.id === this.state.participant.attributes.id)[0],
-                  state: {
-                    content: "",
-                    contentVersion: 0,
-                    isEnded: false
-                  }
-                }
-
-                const gameState: GameState = {
-                  isStarted: true,
-                  isEnding: false,
-                  isEnded: false,
-                  isPublished: false
-                }
+              .then((data: PutStartGameData) => {
+                const participant: Participant = this.state.participant;
+                participant.attributes = data.participants.filter(p => p.id === this.state.participant.attributes.id)[0];
 
                 const game = this.state.game;
-                game.state = gameState;
+                game.state.isStarted = true;
 
                 this.setState({
                   game: game,
                   participant: participant,
-                  section: participant.attributes.isAdmin && !participant.attributes.isAdded ? Section.Admin : Section.Game,
-                  gamePage: participant.attributes.isAdded ? GamePage.Entry : GamePage.NotAdded,
+                  section: !participant.attributes.isAdded ? Section.Admin : Section.Game,
+                  gamePage: !participant.attributes.isAdded ? GamePage.Details : GamePage.Entry,
                   participants: data.participants
                 });
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -452,7 +402,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   startGamePlayer = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       fetch(`api/paperFollies/game/start/player`, {
@@ -469,15 +420,9 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((data: GetStartGamePlayerResponse) => {
-                const participant: Participant = {
-                  attributes: data.participants.filter(p => p.id === this.state.participant.attributes.id)[0],
-                  state: {
-                    content: "",
-                    contentVersion: 0,
-                    isEnded: false
-                  }
-                };
+              .then((data: GetStartGamePlayerData) => {
+                const participant: Participant = this.state.participant;
+                participant.attributes = data.participants.filter(p => p.id === this.state.participant.attributes.id)[0];
 
                 this.setState({
                   participant: participant,
@@ -488,7 +433,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -519,6 +464,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   changeEntryView = (entryView: EntryView) => {
     this.setState({
       errorMessage: "",
+      section: Section.Game,
+      gamePage: GamePage.Entry,
       entryView: entryView
     });
   }
@@ -526,6 +473,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   changeFinalView = (finalView: FinalView) => {
     this.setState({
       errorMessage: "",
+      section: Section.Game,
+      gamePage: GamePage.Final,
       finalView: finalView
     });
   }
@@ -606,14 +555,15 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   createGame = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       const body: CreateGameRequest = {
         gameAttributes: this.state.game.attributes,
         participantAttributes: this.state.participant.attributes,
-        password: this.state.password!.trim(),
-        confirmPassword: this.state.confirmPassword!.trim()
+        password: this.state.password.trim(),
+        confirmPassword: this.state.confirmPassword.trim()
       };
 
       fetch("api/paperFollies/game", {
@@ -630,7 +580,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((data: PostGameResponse) => {
+              .then((data: PostGameData) => {
                 localStorage.setItem('bearerPaperFollies', data.participantToken);
 
                 const game = this.state.game;
@@ -646,11 +596,11 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
                   game: game,
                   gamePage: GamePage.GameReady,
                   participants: participants
-                }, this.setSelectedDisplayedPlayers);
+                });
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -666,12 +616,13 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
       if (password) {
         const body: LoginRequest = {
-          participantId: this.state.participant.attributes.id,
+          participantId: this.state.selectedLoginPlayerId,
           participantPassword: password
         }
 
         this.setState({
-          fetchingData: true
+          fetchingData: true,
+          errorMessage: ""
         });
 
         fetch(`api/paperFollies/login`, {
@@ -688,36 +639,13 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
             if (response.status === 200) {
               response.json()
-                .then((data: LoginParticipantResponse) => {
+                .then((data: PostLoginParticipantData) => {
                   localStorage.setItem('bearerPaperFollies', data.playerToken);
-
-                  const gamePage: GamePage = data.participant.attributes.isAdmin ?
-                    (!data.game.state.isStarted ? GamePage.GameReady :
-                      (data.game.state.isEnded ? GamePage.Final :
-                        (data.participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry))) :
-                    (!data.participant.attributes.isAdded ? GamePage.NotAdded :
-                      (!data.game.state.isStarted ? GamePage.WaitingForStart :
-                        (data.game.state.isEnded ? GamePage.Final :
-                          (data.participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry))));
-
-                  // TODO this logic is shared with componentDidMount
-                  this.setState({
-                    isLoggedIn: true,
-                    section: Section.Game,
-                    gamePage: gamePage,
-                    game: data.game,
-                    participant: data.participant,
-                    participants: data.participants,
-                    contentOld: data.participant.state.content,
-                    precedingPlayerState: data.precedingPlayerState,
-                    displayedPrecedingPlayerState: data.precedingPlayerState,
-                    followingPlayerState: data.followingPlayerState,
-                    displayedFollowingPlayerState: data.followingPlayerState,
-                  }, this.setSelectedDisplayedPlayers);
+                  this.setLoginState(data);
                 })
             } else {
               response.json()
-                .then((data: ErrorResponse) => {
+                .then((data: ErrorData) => {
                   this.setState({
                     errorMessage: data.title
                   });
@@ -730,6 +658,34 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
         });
       }
     }
+  }
+
+  setLoginState = (data: GetParticipantData) => {
+    const gamePage: GamePage = data.participant.attributes.isAdmin ?
+      (!data.game.state.isStarted ? GamePage.GameReady :
+        (data.game.state.isEnded ? GamePage.Final :
+          (data.participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry))) :
+      (!data.participant.attributes.isAdded ? GamePage.NotAdded :
+        (!data.game.state.isStarted ? GamePage.WaitingForStart :
+          (data.game.state.isEnded ? GamePage.Final :
+            (data.participant.state.isEnded ? GamePage.WaitingForEnd : GamePage.Entry))));
+
+    this.setState({
+      isLoggedIn: true,
+      section: data.participant.attributes.isAdmin && data.game.state.isStarted && !data.game.state.isEnded ? Section.Admin : Section.Game,
+      gamePage: gamePage,
+      entryView: data.participant.attributes.isAdded ? EntryView.Player : EntryView.Details,
+      game: data.game,
+      participant: data.participant,
+      participants: data.participants,
+      contentOld: data.participant.state.content,
+      precedingPlayerState: data.precedingPlayerState,
+      displayedPrecedingPlayerState: data.precedingPlayerState,
+      followingPlayerState: data.followingPlayerState,
+      displayedFollowingPlayerState: data.followingPlayerState,
+      finalContents: data.finalContents,
+      gameMode: data.participant.attributes.isAdmin ? GameMode.Admin : GameMode.Player
+    });
   }
 
   getParticipants = () => {
@@ -752,14 +708,14 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
               response.json()
-                .then((responseJson: GetParticipantsResponse) => {
+                .then((data: GetParticipantsData) => {
                   this.setState({
-                    participants: responseJson.participants
+                    participants: data.participants
                   });
                 })
             } else {
               response.json()
-                .then((data: ErrorResponse) => {
+                .then((data: ErrorData) => {
                   this.setState({
                     errorMessage: data.title
                   });
@@ -789,7 +745,9 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((data: GetAdminStateResponse) => {
+              .then((data: GetAdminStateData) => {
+                // state content returns blank if it doesn't need updating
+                // so only update if version is greater than existing
                 let precedingPlayerState: PlayerState = this.state.precedingPlayerState;
 
                 if (precedingPlayerState.contentVersion < data.precedingPlayerState.contentVersion) {
@@ -810,7 +768,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -840,18 +798,18 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((responseJson: GetGameStateResponse) => {
+              .then((data: GetGameStateData) => {
                 const game = this.state.game;
-                game.state = responseJson.gameState;
+                game.state = data.gameState;
 
-                // TODO also get participants if game is now Started but wasn't Started?
                 this.setState({
-                  game: game
+                  game: game,
+                  participants: data.participants
                 });
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -862,13 +820,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   }
 
   getPlayerState = () => {
-    if (!this.state.precedingPlayerState || !this.state.followingPlayerState) {
-      return;
-    }
-
     if (!this.state.pollingData) {
       this.setState({
-        errorMessage: "",
         pollingData: true
       });
 
@@ -886,7 +839,9 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((data: GetPlayerStateResponse) => {
+              .then((data: GetPlayerStateData) => {
+                // state content returns blank if it doesn't need updating
+                // so only update if version is greater than existing
                 let precedingPlayerState: PlayerState = this.state.precedingPlayerState;
 
                 if (precedingPlayerState.contentVersion < data.precedingPlayerState.contentVersion) {
@@ -900,7 +855,6 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
                 }
 
                 const game = this.state.game;
-
                 game.state = data.gameState
 
                 this.setState({
@@ -911,7 +865,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -932,8 +886,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
     if (!this.state.fetchingData) {
       this.setState({
-        errorMessage: "",
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       fetch(`api/paperFollies/participant/${this.state.selectedWaitingPlayerId}/add`, {
@@ -950,7 +904,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((data: PutAddPlayerResponse) => {
+              .then((data: PutAddPlayerData) => {
                 const participants = this.state.participants;
 
                 for (var x = 0; x < participants.length; x++) {
@@ -963,11 +917,11 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
                 this.setState({
                   participants: participants,
                   selectedWaitingPlayerId: 0
-                }, this.setSelectedDisplayedPlayers);
+                });
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -977,7 +931,52 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     }
   }
 
-  getGameFromCode = (callback: () => void) => {
+  getFinalFromCode = (callback: () => void) => {
+    if (!this.state.game.attributes.code.trim()) {
+      this.setState({
+        errorMessage: "no game code :("
+      });
+
+      return;
+    }
+
+    this.setState({
+      fetchingData: true,
+      errorMessage: ""
+    });
+
+    fetch(`api/paperFollies/final/code/${this.state.game.attributes.code.trim().toLowerCase().split(" ").join("-")}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(response => {
+        this.setState({
+          fetchingData: false
+        });
+
+        if (response.status === 200) {
+          response.json()
+            .then((data: GetFinalFromCodeData) => {
+              this.setState({
+                game: data.game,
+                participants: data.participants,
+                finalContents: data.finalContents
+              }, callback);
+            })
+        } else {
+          response.json()
+            .then((data: ErrorData) => {
+              this.setState({
+                errorMessage: data.title
+              });
+            })
+        }
+      });
+  }
+
+  getGameFromCode = (successCallback: () => void, failureCallback: () => void) => {
     if (!this.state.game.attributes.code.trim()) {
       this.setState({
         errorMessage: "no game code :("
@@ -987,8 +986,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     }
   
     this.setState({
-      errorMessage: "",
-      fetchingData: true
+      fetchingData: true,
+      errorMessage: ""
     });
   
     fetch(`api/paperFollies/game/code/${this.state.game.attributes.code.trim().toLowerCase().split(" ").join("-")}`, {
@@ -1004,18 +1003,18 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   
         if (response.status === 200) {
           response.json()
-            .then((data: GetGameFromCodeResponse) => {
+            .then((data: GetGameFromCodeData) => {
               this.setState({
                 game: data.game,
                 participants: data.participants
-              }, callback);
+              }, successCallback);
             })
         } else {
           response.json()
-            .then((data: ErrorResponse) => {
+            .then((data: ErrorData) => {
               this.setState({
                 errorMessage: data.title
-              });
+              }, failureCallback);
             })
         }
       });
@@ -1024,7 +1023,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   endGame = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       fetch(`api/paperFollies/game/end`, {
@@ -1041,7 +1041,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             response.json()
-              .then((data: PutEndGameResponse) => {
+              .then((data: PutEndGameData) => {
                 const game: Game = this.state.game;
                 game.state.isEnding = true;
                 game.state.isEnded = true;
@@ -1049,12 +1049,15 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
                 this.setState({
                   game: game,
                   finalContents: data.finalContents,
-                  gamePage: GamePage.Final
+                  section: Section.Game,
+                  gamePage: GamePage.Final,
+                  finalView: FinalView.Contents,
+                  adminPage: AdminPage.Main
                 });
               });
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -1064,13 +1067,54 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     }
   }
 
-  publishGame = () => {
+  getFinalContents = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
-      fetch(`api/paperFollies/game/publish`, {
+      fetch(`api/paperFollies/game/final`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `bearer ${localStorage.getItem('bearerPaperFollies')}`
+        }
+      })
+        .then((response: Response) => {
+          this.setState({
+            fetchingData: false
+          });
+
+          if (response.status === 200) {
+            response.json()
+              .then((data: GetFinalContents) => {
+                this.setState({
+                  finalContents: data.finalContents,
+                  gamePage: GamePage.Final,
+                  finalView: FinalView.Contents
+                });
+              });
+          } else {
+            response.json()
+              .then((data: ErrorData) => {
+                this.setState({
+                  errorMessage: data.title
+                });
+              })
+          }
+        });
+    }
+  }
+
+  shareGame = () => {
+    if (!this.state.fetchingData) {
+      this.setState({
+        fetchingData: true,
+        errorMessage: ""
+      });
+
+      fetch(`api/paperFollies/game/share`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1084,14 +1128,15 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
           if (response.status === 200) {
             const game: Game = this.state.game;
-            game.state.isPublished = true;
+            game.state.isShared = true;
 
             this.setState({
-              game: game
+              game: game,
+              adminPage: AdminPage.Main
             });
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -1104,7 +1149,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   beginEndingGame = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       fetch(`api/paperFollies/game/begin-ending`, {
@@ -1124,11 +1170,12 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             game.state.isEnding = true;
 
             this.setState({
-              game: game
+              game: game,
+              adminPage: AdminPage.Main
             });
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -1141,7 +1188,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   joinGame = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
   
       const body: CreateParticipantRequest = {
@@ -1166,18 +1214,21 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   
           if (response.status === 200) {
             response.json()
-              .then((data: PostParticipantResponse) => {
+              .then((data: PostParticipantData) => {
                 localStorage.setItem('bearerPaperFollies', data.playerToken);
+
+                const participant: Participant = this.state.participant;
+                participant.attributes = data.participantAttributes;
 
                 this.setState({
                   isLoggedIn: true,
                   gamePage: GamePage.WaitingForStart,
-                  participant: data.participant
+                  participant: participant
                 });
               })
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -1185,6 +1236,16 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           }
         });
     }
+  }
+
+  closeHelp = (infoId: string) => {
+    const shownInfos = this.state.shownInfos;
+
+    shownInfos[infoId] = false;
+
+    this.setState({
+      shownInfos: shownInfos
+    });
   }
 
   confirmReset = () => {
@@ -1210,7 +1271,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           isEnded: false,
           isEnding: false,
           isStarted: false,
-          isPublished: false
+          isShared: false
         }
       },
       characterLimitInput: "500",
@@ -1258,12 +1319,14 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
       pollingData: false,
       section: Section.Game,
       gamePage: GamePage.Intro,
+      adminPage: AdminPage.Main,
       entryView: EntryView.Player,
       gameMode: undefined,
       participants: [],
       errorMessage: "",
       selectedAddedPlayerId: 0,
       selectedWaitingPlayerId: 0,
+      selectedLoginPlayerId: 0,
       isLoggedIn: false,
       playerSummaries: []
     });
@@ -1272,7 +1335,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   downloadBackup = () => {
     if (!this.state.fetchingData) {
       this.setState({
-        fetchingData: true
+        fetchingData: true,
+        errorMessage: ""
       });
 
       fetch("api/paperFollies/game/download/text", {
@@ -1287,20 +1351,18 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             fetchingData: false
           });
 
-          console.log(response);
-
           if (response.status === 200) {
             response.blob()
               .then(blob => {
                 let url = window.URL.createObjectURL(blob);
                 let a = document.createElement('a');
                 a.href = url;
-                a.download = 'something.txt';
+                a.download = `${this.state.game.attributes.title.replace(/\s/g, '')}.txt`;
                 a.click();
               });
           } else {
             response.json()
-              .then((data: ErrorResponse) => {
+              .then((data: ErrorData) => {
                 this.setState({
                   errorMessage: data.title
                 });
@@ -1328,7 +1390,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
         isEnded: false,
         isEnding: false,
         isStarted: false,
-        isPublished: false
+        isShared: false
       }
     };
 
@@ -1383,6 +1445,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
       errorMessage: "",
       selectedAddedPlayerId: 0,
       selectedWaitingPlayerId: 0,
+      selectedLoginPlayerId: 0,
       gamePage: GamePage.LogInGame
     });
   }
@@ -1394,66 +1457,78 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     })
   }
 
+  // TODO expand
+  getNumberth = (index: number) => {
+    if (index == 1) {
+      return `${index}st`;
+    } else if (index == 2) {
+      return `${index}nd`;
+    } else if (index == 3) {
+      return `${index}rd`;
+    } else if (index >= 4 && index <= 20) {
+      return `${index}th`;
+    } else {
+      return `#${index}`;
+    }
+  }
+
   render() {
     let component: JSX.Element = <div key="ToDo">
       <div className="component">
-        <div className="information">ToDo for section ({this.state.section}) gamePage ({this.state.gamePage})</div>
+        <div className="information">ToDo for section ({this.state.section}) gamePage ({this.state.gamePage} entryView ({this.state.entryView}) finalView ({this.state.finalView}))</div>
       </div>
       <div className="component buttons">
-        <button className="navigation" onClick={() => this.changeSection(Section.Reset)}>Reset</button>
+        <button className="navigation" onClick={() => this.changeSection(Section.ConfirmReset)}>Reset</button>
       </div>
     </div>;
 
     let showGameTitle: boolean = true;
 
-    if (this.state.section === Section.Reset) {
-      component = <div key="confirmReset">
+    if (this.state.section === Section.ConfirmReset) {
+      component = <div key={Section.ConfirmReset}>
         <div className="component">
           <div className="information">Are you sure you want to leave this game?</div>
           <br />
           <div className="information">(If you didn't give a password, you won't be able to log in again!)</div>
         </div>
         <div className="component buttons">
-          <button className="action" onClick={this.confirmReset}>Yeah</button>
+          <button className="action" onClick={this.confirmReset}>Yup</button>
         </div>
       </div>;
     } else if (this.state.section === Section.Game) {
       if (this.state.gamePage === GamePage.Intro) {
         showGameTitle = false;
 
-        component = <div key={GamePage.Intro}>
+        component = <div key={`${Section.Game}-${GamePage.Intro}`}>
           <div className="component">
             <div className="information">Welcome to Paper Follies! A dynamic variant of Exquisite Corpse.</div>
           </div>
           <div className="component">
-            <div className="information">This is a creative writing game where each player is assigned one of a list of segments to write in. They can only see the segments before and/or after their own - everything else is invisible to them.</div>
+            <div className="information">This is a creative writing game where each player is assigned a segment to write in. They can only see the segments preceding and/or following their own - every other segment is hidden!</div>
           </div>
           <div className="component">
-            <div className="information">But! Unlike in Exquisite Corpse, each player can see when one of their neighbours has made a modification to <i>their</i> text!</div>
+            <div className="information">But! Unlike in Exquisite Corpse, each player can see when one of their neighbours has made a modification to <i>their</i> segment! And these changes might show an insight into what is happening further down the chain...</div>
           </div>
           <div className="component buttons">
             <button className="action" onClick={() => this.changeGameAction(GamePage.GameTitle, GameMode.Admin)}>Start a New Game</button>
           </div>
-          <div className="component">
-            <div className="text">or</div>
-          </div>
           <div className="component buttons">
-            <button className="action" onClick={() => this.changeGameAction(GamePage.GameCodeJoin, GameMode.Player)}>Join an existing Game</button>
-          </div>
-          <div className="component">
-            <div className="text">or</div>
+            <button className="action" onClick={() => this.changeGameAction(GamePage.GameCode, GameMode.Player)}>Join a Game</button>
           </div>
           <div className="component buttons">
             <button className="action" onClick={() => this.changeGamePage(GamePage.LogInGame)}>Log In</button>
           </div>
+          <div className="component buttons">
+            <button className="action" onClick={() => this.changeGameAction(GamePage.GameCode, GameMode.Reader)}>View Game</button>
+          </div>
           <div className="component">
-            <div className="note">(Disclaimer: Please be aware that I, the sole developer responsible for developing and maintaining this game and its associated database, might accidentally break everything at any time and with no warning. There is no time limit to a game but you are advised to play marathons at your own risk...)</div>
+            <div className="note">(Note: This game is still in development, if you encounter any bugs or other issues please be patient and contact me on Twitter at <a href="https://twitter.com/lotographia" target="_blank">@lotographia</a>!)</div>
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.GameTitle) {
         showGameTitle = false;
 
-        component = <div key={GamePage.GameTitle}>
+        component = <div key={`${Section.Game}-${GamePage.GameTitle}`}>
           <div className="component">
             <label htmlFor="gameTitle">Game Title</label>
             <br />
@@ -1467,7 +1542,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.GameDescription) {
-        component = <div key={GamePage.GameDescription}>
+        component = <div key={`${Section.Game}-${GamePage.GameDescription}`}>
           <div className="component">
             <label htmlFor="description">Description</label>
             <br />
@@ -1475,7 +1550,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             <br />
             <div className="note">A prompt for players to start from, for example "The Adventures of Sally Buccaneer, 1930s Astronaut, and her pet Martian Poodle, Written in the First Person". Be as specific or vague as you wish.</div>
             <br />
-            <div className="note">Leave blank for 'Hard Mode'.</div>
+            <div className="note">(Or blank for 'Hard Mode')</div>
           </div>
           <div className="component buttons">
             <button className="navigation" onClick={() => this.changeGamePage(GamePage.GameTitle)}>Back</button>
@@ -1483,7 +1558,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.GameType) {
-        component = <div key={GamePage.GameType}>
+        component = <div key={`${Section.Game}-${GamePage.GameType}`}>
           <div className="component">
             <label id="gameType">Which adjacent content can players see?</label>
             <br />
@@ -1494,9 +1569,9 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
               <option value={GameType.Following}>Only following content</option>
             </select>
             <br />
-            <div className="note">If a player is first in the list and does not have a 'preceding' segment to see, they will see the last segment instead. Vice versa for the last player in the list.</div>
+            <div className="note">The player with the <i>first</i> segment will not have a 'preceding' segment to see, so they will see the <i>last</i> segment instead. Vice versa for the last player in the sequence.</div>
             <br />
-            <div className="note">Everyone can see how many players there are in total, and which player they are in the list</div>
+            <div className="note">Four players required for a game where each player can see both the preceding and following segments, three players required if they can only see one other other.</div>
           </div>
           <div className="component buttons">
             <button className="navigation" onClick={() => this.changeGamePage(GamePage.GameDescription)}>Back</button>
@@ -1510,7 +1585,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           characterLimit >= 1 &&
           characterLimit <= 4000;
 
-        component = <div key={GamePage.GameCharacterLimit}>
+        component = <div key={`${Section.Game}-${GamePage.GameCharacterLimit}`}>
           <div className="component">
             <label htmlFor="gameCharacterLimit">Character Limit</label>
             <br />
@@ -1523,31 +1598,43 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             <button className="navigation" disabled={!isValidCharacterLimit} onClick={() => this.changeGamePage(GamePage.PlayerName)}>Next</button>
           </div>
         </div>;
-      } else if (this.state.gamePage === GamePage.GameCodeJoin) {
+      } else if (this.state.gamePage === GamePage.GameCode) {
         showGameTitle = false;
 
-        component = <div key={GamePage.GameCodeJoin}>
+        component = <div key={`${Section.Game}-${GamePage.GameCode}`}>
           <div className="component">
             <label htmlFor="gameCode">Game Code</label>
             <br />
             <input type="text" id="gameCode" placeholder="something-something-something" defaultValue={this.state.game.attributes.code} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeGameCode(event.target.value)} />
             <br />
-            <div className="note">The code for the game you want to join</div>
+            <div className="note">The code for the game you want to {this.state.gameMode === GameMode.Reader ? "read" : "join"}</div>
           </div>
           <div className="component buttons">
             <button className="navigation" disabled={this.state.fetchingData} onClick={() => this.changeGameAction(GamePage.Intro, undefined)}>Back</button>
-            <button className="action" disabled={!this.state.game.attributes.code.trim() || this.state.fetchingData} onClick={() => this.getGameFromCode(() => this.changeGamePage(GamePage.GameJoinIntro))}>Find Game</button>
+            {this.state.gameMode === GameMode.Player && <button className="action" disabled={!this.state.game.attributes.code.trim() || this.state.fetchingData} onClick={() => this.getGameFromCode(() => this.changeGamePage(GamePage.GameJoinIntro), () => { })}>Find Game</button>}
+            {this.state.gameMode === GameMode.Reader && <button className="action" disabled={!this.state.game.attributes.code.trim() || this.state.fetchingData} onClick={() => this.getFinalFromCode(() => this.changeFinalView(FinalView.Details))}>Find Game</button>}
+          </div>
+        </div>;
+      } else if (this.state.gamePage === GamePage.RetrievingGame) {
+        showGameTitle = false;
+
+        component = <div key={`${Section.Game}-${GamePage.RetrievingGame}`}>
+          <div className="component">
+            <div className="emphasis">Loading Game...</div>
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.GameJoinIntro) {
-        component = <div key={GamePage.GameJoinIntro}>
+        var description: JSX.Element[] = this.state.game.attributes.description.split("\n").map((content, index) =>
+          <div key={`description${index}`} className="information">
+            {content}
+          </div>
+        );
+
+        component = <div key={`${Section.Game}-${GamePage.GameJoinIntro}`}>
+          {this.state.game.attributes.description && <div className="component">
+            {description}
+          </div>}
           <div className="component">
-            {this.state.game.attributes.description &&
-              <div className="subtitle">{this.state.game.attributes.description}</div>
-            }
-            {this.state.game.attributes.description &&
-              <br />
-            }
             <div className="emphasis">A story written in segments of no more than {this.state.game.attributes.characterLimit} characters</div>
             <br />
             {this.state.game.attributes.canSeeFollowingContent && this.state.game.attributes.canSeePrecedingContent ?
@@ -1566,13 +1653,13 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             {!this.state.game.state.isStarted &&
               <button className="action" onClick={() => this.changeGamePage(GamePage.PlayerName)}>Continue</button>
             }
-            {this.state.game.state.isEnded &&
-              <button className="action" onClick={() => this.changeGamePage(GamePage.Final)}>View game</button>
+            {this.state.game.state.isShared &&
+              <button className="action" onClick={() => this.changeFinalView(FinalView.Details)}>View game</button>
             }
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.PlayerName) {
-        component = <div key={GamePage.PlayerName}>
+        component = <div key={`${Section.Game}-${GamePage.PlayerName}`}>
           <div className="component">
             <label id="playerName">Your Name</label>
             <br />
@@ -1593,7 +1680,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
               <input type="checkbox" id="playersHaveBiography" defaultChecked={this.state.game.attributes.participantsHaveBiographies} onChange={this.toggleParticipantsHaveBiography} />
               <label htmlFor="playersHaveBiography">Player Biographies</label>
               <br />
-              <div className="note">Players can write a short biography about themselves (will be included in final documentation)</div>
+              <div className="note">Players can write a short biography about themselves (will be included as part of final result)</div>
             </div>
           }
           <div className="component buttons">
@@ -1602,13 +1689,13 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.PlayerBiography) {
-        component = <div key={GamePage.PlayerBiography}>
+        component = <div key={`${Section.Game}-${GamePage.PlayerBiography}`}>
           <div className="component">
             <label htmlFor="biography">Your Biography</label>
             <br />
             <textarea id="biography" value={this.state.participant.attributes.biography} placeholder="Who are you all about?" rows={2} cols={32} maxLength={4000} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changeParticipantBiography(event.target.value)} />
             <br />
-            <div className="note">Some notes to be included about yourself in final document (optional).</div>
+            <div className="note">A little bit about yourself for other people to see (optional).</div>
           </div>
           <div className="component buttons">
             <button className="navigation" onClick={() => this.changeGamePage(GamePage.PlayerName)}>Back</button>
@@ -1616,7 +1703,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.PlayerPassword) {
-        component = <div key={GamePage.PlayerPassword}>
+        component = <div key={`${Section.Game}-${GamePage.PlayerBiography}`}>
           <div className="component">
             <label htmlFor="password">Password</label>
             <br />
@@ -1626,35 +1713,32 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             <br />
             <input type="password" id="confirmPassword" className={this.state.password !== this.state.confirmPassword ? "error" : ""} placeholder="What's the word (again)?" defaultValue={this.state.confirmPassword} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changePlayerConfirmPassword(event.target.value)} />
             <br />
-            {this.state.gameMode === GameMode.Player &&
-              <div className="note">Optional password. Not necessary if you intend to complete a game in one session. Can be used to continue writing on a new device if you need to.</div>
-            }
-            {this.state.gameMode === GameMode.Player &&
-              <br />
-            }
-            <div className="note">(Please note that as this game does not store identifying details, passwords cannot be recovered)</div>
+            <div className="note">{this.state.gameMode === GameMode.Player && "Optional password. "}Can be used to log in to other devices to continue the game, or to log again if your session times out.</div>
+            <br />
+            <div className="note">(Please note that passwords cannot be recovered!)</div>
           </div>
-          {this.state.gameMode == GameMode.Player &&
-            <div className="component buttons">
-              <button className="action" disabled={this.state.password.trim() !== this.state.confirmPassword.trim() || this.state.fetchingData} onClick={this.joinGame}>Join Game</button>
-            </div>
-          }
           <div className="component buttons">
             <button className="navigation" disabled={this.state.fetchingData} onClick={() => this.changeGamePage(this.state.game.attributes.participantsHaveBiographies ? GamePage.PlayerBiography : GamePage.PlayerName)}>Back</button>
             {this.state.gameMode == GameMode.Admin &&
               <button className="navigation" disabled={!this.state.password.trim() || (this.state.password.trim() !== this.state.confirmPassword.trim())} onClick={() => this.changeGamePage(GamePage.CreateGame)}>Next</button>
             }
+            {this.state.gameMode == GameMode.Player &&
+              <button className="action" disabled={this.state.password.trim() !== this.state.confirmPassword.trim() || this.state.fetchingData} onClick={this.joinGame}>Join Game</button>
+            }
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.CreateGame) {
-        component = <div key={GamePage.CreateGame}>
+        var description: JSX.Element[] = this.state.game.attributes.description.split("\n").map((content, index) =>
+          <div key={`description${index}`} className="information">
+            {content}
+          </div>
+        );
+
+        component = <div key={`${Section.Game}-${GamePage.CreateGame}`}>
+          {this.state.game.attributes.description && < div className="component">
+            {description}
+          </div>}
           <div className="component">
-            {this.state.game.attributes.description &&
-              <div className="subtitle">{this.state.game.attributes.description}</div>
-            }
-            {this.state.game.attributes.description &&
-              <br />
-            }
             <div className="emphasis">Written by {this.state.participant.attributes.name} and friends</div>
             <br />
             <div className="emphasis">In segments of no more than {this.state.game.attributes.characterLimit} characters</div>
@@ -1674,15 +1758,13 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             <input type="checkbox" id="randomlyOrderPlayers" defaultChecked={this.state.game.attributes.playersAreRandomlyOrdered} onChange={this.toggleRandomlyOrderPlayers} />
             <label htmlFor="randomlyOrderPlayers">Randomly order players</label>
             <br />
-            <div className="note">If unselected, players will be assigned segments in the order they joined.</div>
-            <br />
-            <div className="note">TODO (as game creator, you will be the first player?)</div>
-          </div>
-          <div className="component buttons">
-            <button className="action" disabled={this.state.fetchingData} onClick={this.createGame}>Create Game</button>
+            <div className="note">{this.state.game.attributes.playersAreRandomlyOrdered ?
+              'Players will be randomly assigned a segment when the game starts' :
+              `Players will be assigned segments in the order they ${this.state.game.attributes.addPlayersManually ? "are added" : "join"}.`}</div>
           </div>
           <div className="component buttons">
             <button className="navigation" disabled={this.state.fetchingData} onClick={() => this.changeGamePage(GamePage.PlayerPassword)}>Back</button>
+            <button className="action" disabled={this.state.fetchingData} onClick={this.createGame}>Create Game</button>
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.GameReady) {
@@ -1700,13 +1782,13 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
         const addedPlayerElements: JSX.Element[] = addedPlayers
           .map((value: ParticipantAttributes, index: number) => <div key={`addedPlayer${index}`} className={`box-item${value.id === this.state.selectedAddedPlayerId ? " selected" : ""}`} onClick={() => this.changeSelectedAddedPlayerId(value.id)}>
-              {value.name}
-            </div>);
+            {value.name}
+          </div>);
 
         const addedPlayer: ParticipantAttributes = addedPlayers.filter(p => p.id === this.state.selectedAddedPlayerId)[0];
 
         const waitingPlayerBiography: JSX.Element[] = waitingPlayer ? (waitingPlayer.biography ?
-          waitingPlayer.biography.split("\n").map((value: string, index: number) => <div key={`addedBio${index}`}>
+          waitingPlayer.biography.split("\n").map((value: string, index: number) => <div key={`waitingBio${index}`}>
             {value}
           </div>) :
           [<div>(no bio)</div>]) : [];
@@ -1721,11 +1803,11 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           .map((value: ParticipantAttributes, index: number) => <div key={`waitingPlayer${index}`} className={`box-item${value.id === this.state.selectedWaitingPlayerId ? " selected" : ""}`} onClick={() => this.changeSelectedWaitingPlayerId(value.id)}>
             {value.name}
           </div>
-        );
+          );
 
-        component = <div key={GamePage.GameReady}>
+        component = <div key={`${Section.Game}-${GamePage.GameReady}`}>
           <div className="component">
-            <div className="information">Game is ready now, waiting for people to join!</div>
+            <div className="information">Game is ready, now waiting for people to join!</div>
           </div>
           <div className="component">
             <div className="information">Code for game is</div>
@@ -1765,16 +1847,16 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             </div>}
           </div>
           <div className="component">
-            <div className="note">(Note: Players can no longer join once game is started!)</div>
+            <div className="note">Players can no longer join once game is started.</div>
           </div>
           <div className="component buttons">
-            <button className="action" disabled={this.state.fetchingData || addedPlayers.length < 3} onClick={this.startGame}>Start Game</button>
+            <button className="action" disabled={this.state.fetchingData || addedPlayers.length < (this.state.game.attributes.canSeeFollowingContent && this.state.game.attributes.canSeePrecedingContent ? 4 : 3)} onClick={this.startGameAdmin}>Start Game</button>
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.LogInGame) {
         showGameTitle = false;
 
-        component = <div key={GamePage.LogInGame}>
+        component = <div key={`${Section.Game}-${GamePage.LogInGame}`}>
           <div className="component">
             <label htmlFor="gameCode">Game Code</label>
             <br />
@@ -1784,29 +1866,37 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
           <div className="component buttons">
             <button className="navigation" disabled={this.state.fetchingData} onClick={() => this.changeGamePage(GamePage.Intro)}>Back</button>
-            <button className="action" disabled={!this.state.game.attributes.code.trim() || this.state.fetchingData} onClick={() => this.getGameFromCode(() => { this.initialiseDefaultLoginParticipant(); this.changeGamePage(GamePage.LogInPlayer); })}>Find Game</button>
+            <button className="action" disabled={!this.state.game.attributes.code.trim() || this.state.fetchingData} onClick={() => this.getGameFromCode(() => { this.initialiseDefaultLoginParticipant(); }, () => { })}>Find Game</button>
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.LogInPlayer) {
-        const playerElements: JSX.Element[] = this.state.participants.sort((a: ParticipantAttributes, b: ParticipantAttributes) => a.name < b.name ? -1 : 1)
-          .map((option, index) =>
-            <option key={`participant${index}`} value={option.id}>{option.name}</option>);
+        const participant: ParticipantAttributes = this.state.participants.filter(p => p.id === this.state.selectedLoginPlayerId)[0];
 
-        component = <div key={GamePage.LogInPlayer}>
-          <div className="component">
-            <div className="information">List Players Here</div>
+        const playerElements: JSX.Element[] = this.state.participants
+          .map((value: ParticipantAttributes, index: number) => <div key={`loginPlayer${index}`} className={`box-item${value.id === this.state.selectedLoginPlayerId ? " selected" : ""}`} onClick={() => this.changeLoginParticipant(value.id)}>
+            {value.name}
           </div>
-          <div className="component">
-            <select onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.changeParticipant(event.currentTarget.value)}
-              value={this.state.participant.attributes.id}>
-              {playerElements}
-            </select>
+          );
+
+        const playerBiography: JSX.Element[] = participant.biography ? participant.biography.split("\n")
+          .map((value: string, index: number) => <div key={`playerBio${index}`}>
+            {value}
           </div>
-          <div className="component">
-            <div className="option selected">
-              <div className="name">{this.state.participant.attributes.name}</div>
-              <div className="description">{this.state.participant.attributes.biography ? this.state.participant.attributes.biography : "(no bio)"}</div>
+          ) : [];
+
+        component = <div key={`${Section.Game}-${GamePage.LogInPlayer}`}>
+          <div className="component box-container">
+            <div className="box-header">
+              Players
             </div>
+            <div className="box-view">
+              {playerElements}
+            </div>
+            {this.state.game.attributes.participantsHaveBiographies && <div className="box-footer">
+
+              {playerBiography}
+
+            </div>}
           </div>
           <div className="component buttons">
             <button className="navigation" onClick={() => this.cancelJoinGame()}>Back</button>
@@ -1814,7 +1904,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.WaitingForStart) {
-        component = <div key={GamePage.WaitingForStart}>
+        component = <div key={`${Section.Game}-${GamePage.WaitingForStart}`}>
           <div className="component">
             <div className="component">
               <div className="information">Waiting for game to start...</div>
@@ -1825,7 +1915,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
         </div>;
       } else if (this.state.gamePage === GamePage.LogInPassword) {
-        component = <div key={GamePage.LogInPassword}>
+        component = <div key={`${Section.Game}-${GamePage.LogInPassword}`}>
           <div className="component">
             <label htmlFor="password">Password</label>
             <br />
@@ -1840,7 +1930,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
       } else if (this.state.gamePage === GamePage.BearerFound) {
         showGameTitle = false;
 
-        component = <div key={GamePage.BearerFound}>
+        component = <div key={`${Section.Game}-${GamePage.BearerFound}`}>
           <div className="component">
             <div className="information">Retrieving Game...</div>
           </div>
@@ -1878,23 +1968,37 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             </div>
           </div>;
         } else if (this.state.entryView === EntryView.Player) {
+          const prompt: JSX.Element[] = this.state.game.attributes.description.split("\n")
+            .map((content, index) =>
+              <div key={`prompt${index}`} className="text">
+                {content}
+              </div>
+            );
+
           component = <div key={`${GamePage.Entry}-${EntryView.Player}`}>
             {this.state.participant.state.contentVersion === 0 && <div className="component">
-              <div className="information">You are player {this.state.participant.attributes.contentIndex} of {this.addedPlayers().length}! Enter your first content here.</div>
+              {prompt}
+              {this.state.game.attributes.description && <br />}
+              <div className="note">You are writing segment {this.state.participant.attributes.contentIndex} of {this.addedPlayers().length}! Write something that you think might work as the {this.getNumberth(this.state.participant.attributes.contentIndex)} segment of this story/poem/thing.</div>
             </div>}
-            <div className="component">
-              <div className="note">{this.state.game.attributes.description}</div>
-            </div>
             <div className="component">
               <textarea value={this.state.participant.state.content} placeholder="It was a dark and stormy night..." rows={2} cols={32} maxLength={Number(this.state.game.attributes.characterLimit)} disabled={this.state.game.state.isEnded || this.state.participant.state.isEnded} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changePlayerContent(event.target.value)} />
               <br />
-              <div className="note">V.{this.state.participant.state.contentVersion} - {this.state.participant.state.content.trim().length}/{this.state.game.attributes.characterLimit}</div>
+              <div className="note">(Version {this.state.participant.state.contentVersion}, character count {this.state.participant.state.content.trim().length}/{this.state.game.attributes.characterLimit})</div>
             </div>
             <div className="component buttons">
-              <button className="action" disabled={!this.state.participant.state.content.trim() || this.state.participant.state.content.trim() === this.state.contentOld || this.state.participant.state.isEnded} onClick={() => this.updateContent(false)}>Update</button>
-              <button className="action" disabled={!this.state.participant.state.content.trim() || this.state.participant.state.isEnded} onClick={() => this.changeEntryView(EntryView.End)}>End</button>
+              <button className="action" disabled={this.state.game.state.isEnded || !this.state.participant.state.content.trim() || this.state.participant.state.content.trim() === this.state.contentOld || this.state.game.state.isEnding || this.state.game.state.isEnded || this.state.participant.state.isEnded} onClick={() => this.updateContent(false)}>Share {this.state.participant.state.contentVersion === 0 ? "First" : "New"} Update</button>
             </div>
-          </div>
+            {this.state.participant.state.contentVersion > 0 && <div className="component buttons">
+              <button className="action" disabled={this.state.game.state.isEnded || !this.state.participant.state.content.trim() || this.state.game.state.isEnded || this.state.participant.state.isEnded} onClick={() => this.changeEntryView(EntryView.End)}>Share Final Update</button>
+            </div>}
+            {this.state.game.state.isEnding && !this.state.game.state.isEnded && <div className="component">
+              <div className="emphasis">Game is ending! Can only share one more update.</div>
+            </div>}
+            {this.state.game.state.isEnded && <div className="component">
+              <div className="emphasis">Game is ended!</div>
+            </div>}
+          </div>;
         } else if (this.state.entryView === EntryView.Following) {
           const followingContentsElements: JSX.Element[] = this.state.displayedFollowingPlayerState.content ?
             this.state.displayedFollowingPlayerState.content.split("\n").map((content, index) =>
@@ -1914,7 +2018,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
         } else if (this.state.entryView === EntryView.End) {
           component = <div key={`${GamePage.Entry}-${EntryView.End}`}>
             <div className="component">
-              <div className="information">Once you confirm the game is ended, you won't be able to update your content any more!</div>
+              <div className="information">Once you confirm your last update, you won't be able to change your content any more!</div>
             </div>
             <div className="component buttons">
               <button className="action" disabled={this.state.fetchingData} onClick={() => this.changeEntryView(EntryView.Player)}>Cancel</button>
@@ -1923,8 +2027,30 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>;
         }
       } else if (this.state.gamePage === GamePage.WaitingForEnd) {
-        component = <div key={GamePage.WaitingForEnd}>
-          TODO
+        component = <div key={`${Section.Game}-${GamePage.WaitingForEnd}`}>
+          <div className="component">
+            <div className="information">Waiting for game to end!</div>
+          </div>
+          <div className="component buttons">
+            <button className="action" disabled={!this.state.game.state.isEnded || this.state.fetchingData} onClick={this.getFinalContents}>Ready</button>
+          </div>
+        </div>;
+      } else if (this.state.gamePage === GamePage.Details) {
+        var description: JSX.Element[] = this.state.game.attributes.description.split("\n").map((content, index) =>
+          <div key={`finalDescription${index}`} className="information">
+            {content}
+          </div>
+        );
+
+        component = <div key={`${Section.Game}-${GamePage.Details}`}>
+          {this.state.game.attributes.description && <div className="component">
+            {description}
+          </div>}
+          <div className="component">
+            <div className="note">
+              Code: {this.state.game.attributes.code}
+            </div>
+          </div>
         </div>;
       } else if (this.state.gamePage === GamePage.Final) {
         if (this.state.finalView === FinalView.Details) {
@@ -1935,23 +2061,26 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           );
 
           component = <div key={`${GamePage.Final}-${FinalView.Details}`}>
+            {this.state.game.attributes.description && <div className="component">
+              {description}
+            </div>}
             <div className="component">
               <div className="note">
                 Code: {this.state.game.attributes.code}
               </div>
-              {description}
             </div>
           </div>;
         } else if (this.state.finalView === FinalView.Contents) {
-          const playerContents: JSX.Element[] = this.state.finalContents.map((content, index) => {
-            const contents = content.split("\n").map((content, index) =>
-              <div key={`finalFollowingContent${index}`} className="information">
+          const playerContents: JSX.Element[] = this.state.finalContents.map((content, outerIndex) => {
+            const contents = content.split("\n").map((content, innerIndex) =>
+              <div key={`finalFollowingContent${innerIndex}`} className="information">
                 {content}
               </div>
             );
 
-            return <div key={`finalContent${index}`} className="component">
+            return <div key={`finalContent${outerIndex}`} className="component">
               {contents}
+              {outerIndex < this.state.finalContents.length - 1 && <hr />}
             </div>
           });
 
@@ -1959,60 +2088,167 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             {playerContents}
           </div>;
         } else if (this.state.finalView === FinalView.Players) {
+          const playerAttributes: JSX.Element[] = this.addedPlayers().map((attributes: ParticipantAttributes, playerIndex: number) => {
+            const biography: JSX.Element[] = attributes.biography ? attributes.biography.split("\n").map((biographyLine: string, biographyIndex: number) =>
+              <div key={`attributes${playerIndex}biography${biographyIndex}`} className="information">
+                {biographyLine}
+              </div>
+            ) : [];
 
+            return <div key={`attributes${playerIndex}`}>
+              <div className="text">Player {playerIndex + 1}: {attributes.name}</div>
+              {attributes.biography && biography}
+              {attributes.biography && <br />}
+              <br />
+            </div>
+          });
+
+          const admin = this.state.participants.filter(p => p.isAdmin)[0];
+
+          if (admin && !admin.isPlayer) {
+            const adminBio: JSX.Element[] = admin.biography ? admin.biography.split("\n").map((biographyLine: string, biographyIndex: number) =>
+              <div key={`attributes${playerIndex}biography${biographyIndex}`} className="information">
+                {biographyLine}
+              </div>
+            ) : [];
+
+            playerAttributes.push(<div key="attributesAdmin">
+              <div className="text">Admin: {admin.name}</div>
+              {adminBio}
+              <br />
+              <br />
+            </div>);
+          }
+
+          component = <div key={`${GamePage.Final}-${FinalView.Players}`} className="component">
+            {playerAttributes}
+          </div>;
         }
+      } else if (this.state.gamePage === GamePage.NotAdded) {
+        component = <div key={`${Section.Game}-${GamePage.NotAdded}`}>
+          <div className="component">
+            <div className="information">
+              Oh no! You have not been included in this game :(
+            </div>
+            <div className="information">
+              But you could always start your own!
+            </div>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={this.confirmReset}>Exit</button>
+          </div>
+        </div>;
       }
     } else if (this.state.section === Section.Admin) {
-      let adminButtons: JSX.Element;
+      if (this.state.adminPage === AdminPage.Main) {
+        const playerSummaries: JSX.Element[] = this.state.playerSummaries.sort((a: PlayerSummary, b: PlayerSummary) => a.contentIndex < b.contentIndex ? -1 : 1)
+          .map((playerSummary: PlayerSummary, index: number) => <tr key={`summary${index}`}>
+            <td>{playerSummary.contentIndex}</td>
+            <td>{playerSummary.name}</td>
+            <td>{playerSummary.contentVersion}</td>
+            <td>{playerSummary.isEnded ? "True" : "False"}</td>
+          </tr>
+          );
 
-      if (!this.state.game.state.isEnded) {
-        adminButtons = <div className="component buttons">
-          <button className="action" disabled={this.state.fetchingData || this.state.game.state.isEnding} onClick={() => this.beginEndingGame()}>Begin Ending Game</button>
-          <button className="action" disabled={this.state.fetchingData} onClick={() => this.endGame()}>End Game</button>
+        const playerSummariesTable: JSX.Element = <table style={{ width: "100%" }}>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Name</th>
+              <th>Version</th>
+              <th>Has Finished</th>
+            </tr>
+          </thead>
+          <tbody>
+            {playerSummaries}
+          </tbody>
+        </table>
+
+        component = <div key={`${Section.Admin}-${AdminPage.Main}`}>
+          {!this.state.game.state.isEnded && (this.state.playerSummaries.length > 0 ? playerSummariesTable :
+            <div className="component">
+              <div className="emphasis">Retrieving player information...</div>
+            </div>
+          )}
+          {!this.state.game.state.isEnding && !this.state.game.state.isEnded && <div className="component buttons">
+            <button className="action" onClick={() => this.changeAdminPage(AdminPage.ConfirmBeginEnding)}>Begin Ending Game</button>
+          </div>}
+          {!this.state.game.state.isEnded && <div className="component buttons">
+            <button className="action" disabled={this.state.playerSummaries.filter(s => s.contentVersion === 0).length > 0} onClick={() => this.changeAdminPage(AdminPage.ConfirmEnd)}>End Game</button>
+          </div>}
+          {this.state.game.state.isShared && <div>
+            <div className="component">
+              <div className="information">Game is shared publicly!</div>
+            </div>
+            <div className="component">
+              <div className="information">Code for game is</div>
+              <br />
+              <div className="information"><code>{this.state.game.attributes.code}</code></div>
+            </div>
+            <div className="component">
+              <div className="information">Or share this URL:</div>
+              <br />
+              <div className="information"><code>{window.location.origin}/paper-follies?view-game={this.state.game.attributes.code}</code></div>
+            </div>
+
+          </div>}
+          {this.state.game.state.isEnded && <div className="component buttons">
+            <button className="action" onClick={() => this.changeFinalView(FinalView.Contents)}>View The Results</button>
+          </div>}
+          {this.state.game.state.isEnded && !this.state.game.state.isShared && <div className="component buttons">
+            <button className="action" onClick={() => this.changeAdminPage(AdminPage.ConfirmShare)}>Share Game</button>
+          </div>}
+          <div className="component buttons">
+            <button className="action" onClick={this.downloadBackup}>Download Backup</button>
+          </div>
         </div>;
-      } else {
-        adminButtons = <div className="component buttons">
-          <button className="action" onClick={() => this.changeGamePage(GamePage.Final)}>Show Result</button>
-          <button className="action" onClick={() => this.publishGame()}>Publish</button>
+      } else if (this.state.adminPage === AdminPage.ConfirmBeginEnding) {
+        component = <div key={`${Section.Admin}-${AdminPage.ConfirmBeginEnding}`}>
+          <div className="component">
+            <div className="information">Once the game ending has begun, players will only be able to update their segment once more.</div>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={() => this.changeAdminPage(AdminPage.Main)}>Cancel</button>
+            <button className="action" disabled={this.state.fetchingData || this.state.game.state.isEnding} onClick={this.beginEndingGame}>Confirm Begin Ending</button>
+          </div>
+        </div>;
+      } else if (this.state.adminPage === AdminPage.ConfirmEnd) {
+        component = <div key={`${Section.Admin}-${AdminPage.ConfirmEnd}`}>
+          <div className="component">
+            <div className="information">End the game! Segments can no longer be updated and the final result will be revealed.</div>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={() => this.changeAdminPage(AdminPage.Main)}>Cancel</button>
+            <button className="action" disabled={this.state.fetchingData || this.state.playerSummaries.filter(s => s.contentVersion === 0).length > 0} onClick={this.endGame}>Confirm End</button>
+          </div>
+        </div>;
+      } else if (this.state.adminPage === AdminPage.ConfirmShare) {
+        component = <div key={`${Section.Admin}-${AdminPage.ConfirmShare}`}>
+          <div className="component">
+            <div className="information">Share the game! People will be able to view the result by entering the game code.</div>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={() => this.changeAdminPage(AdminPage.Main)}>Cancel</button>
+            <button className="action" disabled={this.state.fetchingData || !this.state.game.state.isEnded} onClick={this.shareGame}>Share The Game</button>
+          </div>
         </div>;
       }
-
-      const playerSummaries: JSX.Element[] = this.state.playerSummaries
-        .map((playerSummary: PlayerSummary, index: number) => <tr key={`summary${index}`}>
-          <td>{playerSummary.contentIndex}</td>
-          <td>{playerSummary.name}</td>
-          <td>{playerSummary.contentVersion}</td>
-          <td>{playerSummary.isEnded ? "True" : "False"}</td>
-        </tr>
-        );
-
-      const playerSummariesTable: JSX.Element = <table style={{ width: "100%" }}>
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Name</th>
-            <th>Version</th>
-            <th>Has Finished</th>
-          </tr>
-        </thead>
-        <tbody>
-          {playerSummaries}
-        </tbody>
-      </table>
-
-      component = <div key={Section.Admin}>
-        {adminButtons}
-        {playerSummariesTable}
-        <div className="component buttons">
-          <button className="action" onClick={() => this.downloadBackup()}>Download Backup</button>
-        </div>
-      </div>;
     } else if (this.state.section === Section.About) {
       showGameTitle = this.state.isLoggedIn;
 
-      component = <div key={Section.About} className="component">
-        <div className="information">This game is intended as light entertainment, but it will store some content you have created so here is some legal information:</div>
-        <div className="information">TODO legal information</div>
+      component = <div key={Section.About}>
+        <div className="component">
+          <div className="information">Paper Follies is free to play! Unfortunately this means there isn't any Game Support, so please keep track of your game codes and passwords, especially since the game doesn't record identifying information (emails or whatever).</div>
+        </div>
+        <div className="component">
+          <div className="information">The game is intended as light entertainment, but it will store content you have created so there should probably be some kind of legal information:</div>
+        </div>
+        <div className="component">
+          <div className="information">All content you create on this website belongs to you, the users.</div>
+        </div>
+        <div className="component">
+          <div className="emphasis">(If you have any idea how to write that in a more legal-sounding way, or can think of other things I should legal stuff I should add, then get in touch!)</div>
+        </div>
       </div>;
     }
 
@@ -2104,10 +2340,11 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     return (
       <div>
         <div className="component headers">
-          <button className="left" onClick={() => this.changeSection(Section.Game)}>Game</button>
-          {this.state.participant.attributes.isAdmin && <button className="left" onClick={() => this.changeSection(Section.Admin)}>Admin</button>}
-          <button className="left" onClick={() => this.changeSection(Section.About)}>About</button>
-          {this.state.participant.attributes.id > 0 && <button className="right" onClick={() => this.changeSection(Section.Reset)}>Exit</button>}
+          <button className="left" disabled={this.state.section === Section.Game} onClick={() => this.changeSection(Section.Game)}>Game</button>
+          {this.state.game.state.isStarted && this.state.participant.attributes.isAdmin && <button className="left" disabled={this.state.section === Section.Admin} onClick={() => this.changeSection(Section.Admin)}>Admin</button>}
+          <button className="left" disabled={this.state.section === Section.About} onClick={() => this.changeSection(Section.About)}>About</button>
+          {this.state.participant.attributes.id > 0 && <button className="right" disabled={this.state.section === Section.ConfirmReset} onClick={() => this.changeSection(Section.ConfirmReset)}>Exit</button>}
+          {this.state.gameMode === GameMode.Reader && this.state.gamePage !== GamePage.GameCode && <button className="right" onClick={this.confirmReset}>Close</button>}
         </div>
         <div className="component">
           <div className="title">{showGameTitle && this.state.game.attributes.title ? this.state.game.attributes.title : "Paper Follies"}</div>
@@ -2120,15 +2357,34 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
         {this.state.isLoggedIn && this.state.participant.state.contentVersion > 0 &&
           this.state.section === Section.Game &&
           this.state.gamePage === GamePage.Entry &&
+          this.state.shownInfos["info1"] &&
+          <div className="component help-container">
+            <div className="help-message">Click 'Details' to show the game details!</div>
+            <div className="help-message">When an adjacent player updates their segment, their button will change colour</div>
+            <div className="help-message">You can continue editing and updating your segment while waiting for other people.</div>
+            <div className="help-close" onClick={() => this.closeHelp("info1")}>X</div>
+          </div>}
+        {this.state.isLoggedIn && this.state.participant.state.contentVersion > 0 &&
+          this.state.section === Section.Game &&
+          this.state.gamePage === GamePage.Entry &&
           <div className="component guides">
-          {entryGuides}
-        </div>}
+            {entryGuides}
+          </div>}
         {this.state.section === Section.Game &&
           this.state.gamePage === GamePage.Final &&
           <div className="component guides">
             {finalGuides}
           </div>}
         {component}
+        {this.state.isLoggedIn &&
+          this.state.section === Section.Game &&
+          this.state.gamePage == GamePage.Entry &&
+          this.state.game.state.isEnded &&
+          <div className="component buttons">
+            <button className="action" onClick={this.getFinalContents}>
+              See results!
+            </button>
+          </div>}
       </div>
     );
   }

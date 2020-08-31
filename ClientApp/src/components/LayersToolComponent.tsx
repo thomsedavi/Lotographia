@@ -102,6 +102,7 @@ const LayerComponent: React.StatelessComponent<LayerComponentProps> = (props) =>
           <option value={FontFamily.Serif}>Serif</option>
           <option value={FontFamily.SansSerif}>Sans Serif</option>
           <option value={FontFamily.Journal}>Journal</option>
+          <option value={FontFamily.Gandhi}>Gandhi</option>
         </select>
       </div>
 
@@ -127,85 +128,90 @@ const LayerComponent: React.StatelessComponent<LayerComponentProps> = (props) =>
       </div>
     </div>
 
-    <div className={`button action${props.layer.isDirty !== undefined && props.layer.isDirty ? " active" : ""}`} onClick={() => {
-      const layer = props.layer;
-
-      if (textRef.current !== null) {
-        layer.shownText = textRef.current.value;
-        layer.hiddenText = textRef.current.value;
-      }
-
-      if (textColorRef.current !== null)
-        layer.textColor = textColorRef.current.value;
-
-      if (textBackgroundColorRef.current !== null)
-        layer.backgroundColor = textBackgroundColorRef.current.value;
-
-      if (fontFamilyRef.current !== null) {
-        switch (fontFamilyRef.current.value) {
-          case FontFamily.SansSerif:
-            layer.fontFamily = FontFamily.SansSerif;
-            break;
-          case FontFamily.Serif:
-            layer.fontFamily = FontFamily.Serif;
-            break;
-          case FontFamily.Journal:
-            layer.fontFamily = FontFamily.Journal;
-            break;
-          case FontFamily.Monospace:
-          default:
-            layer.fontFamily = FontFamily.Monospace;
-            break;
+    <div className="component buttons">
+      <button disabled={props.layer.isDirty === undefined || !props.layer.isDirty} className="action" onClick={() => {
+        const layer = props.layer;
+      
+        if (textRef.current !== null) {
+          layer.shownText = textRef.current.value;
+          layer.hiddenText = textRef.current.value;
         }
-      }
+      
+        if (textColorRef.current !== null)
+          layer.textColor = textColorRef.current.value;
+      
+        if (textBackgroundColorRef.current !== null)
+          layer.backgroundColor = textBackgroundColorRef.current.value;
+      
+        if (fontFamilyRef.current !== null) {
+          switch (fontFamilyRef.current.value) {
+            case FontFamily.SansSerif:
+              layer.fontFamily = FontFamily.SansSerif;
+              break;
+            case FontFamily.Serif:
+              layer.fontFamily = FontFamily.Serif;
+              break;
+            case FontFamily.Journal:
+              layer.fontFamily = FontFamily.Journal;
+              break;
+            case FontFamily.Gandhi:
+              layer.fontFamily = FontFamily.Gandhi;
+              break;
+            case FontFamily.Monospace:
+            default:
+              layer.fontFamily = FontFamily.Monospace;
+              break;
+          }
+        }
+      
+        if (xPositionRef.current !== null) {
+          if (isNaN(Number(xPositionRef.current.value)))
+            layer.horizontalPosition = -1;
+          else
+            layer.horizontalPosition = Number(xPositionRef.current.value);
+        }
+      
+        if (yPositionRef.current !== null) {
+          if (isNaN(Number(yPositionRef.current.value)))
+            layer.verticalPosition = -1;
+          else
+            layer.verticalPosition = Number(yPositionRef.current.value);
+        }
+      
+        if (xAlignmentRef.current !== null) {
+          if (isNaN(Number(xAlignmentRef.current.value)))
+            layer.horizontalAlignment = -1;
+          else
+            layer.horizontalAlignment = Number(xAlignmentRef.current.value);
+        }
+      
+        if (yAlignmentRef.current !== null) {
+          if (isNaN(Number(yAlignmentRef.current.value)))
+            layer.verticalAlignment = -1;
+          else
+            layer.verticalAlignment = Number(yAlignmentRef.current.value);
+        }
+      
+        if (rotationRef.current !== null) {
+          if (isNaN(Number(rotationRef.current.value)))
+            layer.rotation = -1;
+          else
+            layer.rotation = Number(rotationRef.current.value);
+        }
+      
+        if (fontSizeRef.current !== null) {
+          layer.fontSize = Number(fontSizeRef.current.value);
+        }
+      
+        props.updateLayer(layer, props.index);
+      }}>
+          Save
+      </button>
 
-      if (xPositionRef.current !== null) {
-        if (isNaN(Number(xPositionRef.current.value)))
-          layer.horizontalPosition = -1;
-        else
-          layer.horizontalPosition = Number(xPositionRef.current.value);
-      }
-
-      if (yPositionRef.current !== null) {
-        if (isNaN(Number(yPositionRef.current.value)))
-          layer.verticalPosition = -1;
-        else
-          layer.verticalPosition = Number(yPositionRef.current.value);
-      }
-
-      if (xAlignmentRef.current !== null) {
-        if (isNaN(Number(xAlignmentRef.current.value)))
-          layer.horizontalAlignment = -1;
-        else
-          layer.horizontalAlignment = Number(xAlignmentRef.current.value);
-      }
-
-      if (yAlignmentRef.current !== null) {
-        if (isNaN(Number(yAlignmentRef.current.value)))
-          layer.verticalAlignment = -1;
-        else
-          layer.verticalAlignment = Number(yAlignmentRef.current.value);
-      }
-
-      if (rotationRef.current !== null) {
-        if (isNaN(Number(rotationRef.current.value)))
-          layer.rotation = -1;
-        else
-          layer.rotation = Number(rotationRef.current.value);
-      }
-
-      if (fontSizeRef.current !== null) {
-        layer.fontSize = Number(fontSizeRef.current.value);
-      }
-
-      props.updateLayer(layer, props.index);
-    }}>
-      Save
+      <button className="action" onClick={() => props.deleteLayer(props.index)}>
+        Delete
+      </button>
     </div>
-
-    <button className="action" onClick={() => props.deleteLayer(props.index)}>
-      Delete
-    </button>
   </div>;
 }
 
@@ -269,7 +275,7 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
       />);
   });
 
-  children.push(<div className="component" key="addText">
+  children.push(<div className="component buttons" key="addText">
     <button className="action" onClick={() => {
       var layers = props.layers;
 
@@ -279,8 +285,8 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
     }}>Add Text</button>
   </div>);
 
-  children.push(<div className="component" key="updateImage">
-    <div className={`button action${isValid ? " active" : ""}`} onClick={isValid ? props.updateImage : () => { }}>Update Image</div>
+  children.push(<div className="component buttons" key="updateImage">
+    <button disabled={!isValid} className="action" onClick={isValid ? props.updateImage : () => { }}>Update Image</button>
   </div>);
 
   children.push(<div className="component">
@@ -302,6 +308,9 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
           break;
         case FontFamily.Journal:
           fontFamily = "FontFamily.Journal";
+          break;
+        case FontFamily.Gandhi:
+          fontFamily = "FontFamily.Gandhi";
           break;
         case FontFamily.Monospace:
         default:

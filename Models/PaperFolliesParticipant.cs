@@ -5,7 +5,7 @@ namespace Lotographia.Models
 {
     public class PaperFolliesParticipant
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
         public string Biography { get; set; }
         public PaperFolliesParticipantFlags Flags { get; set; }
@@ -16,12 +16,12 @@ namespace Lotographia.Models
         [JsonIgnore]
         public string HashedPassword { get; set; }
 
-        public int GameId { get; set; }
+        public long GameId { get; set; }
         public PaperFolliesGame Game { get; set; }
 
-        public int? PrecedingPlayerId { get; set; }
+        public long? PrecedingPlayerId { get; set; }
         public PaperFolliesParticipant PrecedingPlayer { get; set; }
-        public int? FollowingPlayerId { get; set; }
+        public long? FollowingPlayerId { get; set; }
         public PaperFolliesParticipant FollowingPlayer { get; set; }
     }
 

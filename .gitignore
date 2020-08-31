@@ -246,5 +246,5 @@ _Pvt_Extensions
 /ClientApp/src/pictures/*.js.map
 /ClientApp/src/paperFollies/*.js
 /ClientApp/src/paperFollies/*.js.map
-/ClientApp/src/pictures/meticulousSkeletonGames/*.js
-/ClientApp/src/pictures/meticulousSkeletonGames/*.js.map
+/ClientApp/src/pictures/capricottaGames/*.js
+/ClientApp/src/pictures/capricottaGames/*.js.map

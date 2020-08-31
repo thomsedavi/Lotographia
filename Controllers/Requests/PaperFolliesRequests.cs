@@ -10,7 +10,7 @@
 
     public class CreateParticipantRequest
     {
-        public int GameId { get; set; }
+        public long GameId { get; set; }
         public string GameCode { get; set; }
         public string Password { get; set; }
         public string ConfirmPassword { get; set; }
@@ -19,7 +19,7 @@
 
     public class LoginRequest
     {
-        public int ParticipantId { get; set; }
+        public long ParticipantId { get; set; }
         public string ParticipantPassword { get; set; }
     }
 

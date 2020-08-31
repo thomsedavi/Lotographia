@@ -46,13 +46,13 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "wrong game type" });
                 }
 
-                var participantId = int.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
+                var participantId = long.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
                 var participant = await _context.PaperFolliesParticipants
                     .Include(p => p.PrecedingPlayer)
                     .Include(p => p.FollowingPlayer)
                     .FirstOrDefaultAsync(p => p.Id == participantId);
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var game = await _context.PaperFolliesGames
                     .Include(b => b.Participants)
                     .FirstOrDefaultAsync(g => g.Id == gameId);
@@ -95,13 +95,13 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "unauthorised sorry" });
                 }
 
-                var playerId = int.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
+                var playerId = long.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
                 var player = await _context.PaperFolliesParticipants
                     .Include(p => p.PrecedingPlayer)
                     .Include(p => p.FollowingPlayer)
                     .FirstOrDefaultAsync(p => p.Id == playerId);
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var game = await _context.PaperFolliesGames.FindAsync(gameId);
 
                 if (!player.Flags.HasFlag(PaperFolliesParticipantFlags.IsAdded) ||
@@ -111,20 +111,20 @@ namespace Lotographia.Controllers
                 }
 
                 // return empty string if update isn't available
-                var precedingPlayerContent = player.PrecedingPlayer.ContentVersion > precedingContentVersion ? player.PrecedingPlayer.Content : "";
-                var followingPlayerContent = player.FollowingPlayer.ContentVersion > followingContentVersion ? player.FollowingPlayer.Content : "";
+                var precedingPlayerContent = player.PrecedingPlayer?.ContentVersion > precedingContentVersion ? player.PrecedingPlayer.Content : "";
+                var followingPlayerContent = player.FollowingPlayer?.ContentVersion > followingContentVersion ? player.FollowingPlayer.Content : "";
 
                 return StatusCode(StatusCodes.Status200OK, new {
                     GameState = ToGameStateObject(game),
                     PrecedingPlayerState = new
                     {
                         Content = precedingPlayerContent,
-                        player.PrecedingPlayer.ContentVersion
+                        ContentVersion = player.PrecedingPlayer?.ContentVersion ?? 0
                     },
                     FollowingPlayerState = new
                     {
                         Content = followingPlayerContent,
-                        player.FollowingPlayer.ContentVersion
+                        ContentVersion = player.FollowingPlayer?.ContentVersion ?? 0
                     }
                 });
             }
@@ -149,7 +149,7 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "Unauthorised Action" });
                 }
 
-                var adminId = int.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
+                var adminId = long.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
                 var admin = await _context.PaperFolliesParticipants
                     .Include(p => p.PrecedingPlayer)
                     .Include(p => p.FollowingPlayer)
@@ -199,7 +199,7 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "unauthorised sorry" });
                 }
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var game = await _context.PaperFolliesGames
                     .Include(g => g.Participants)
                     .FirstOrDefaultAsync(g => g.Id == gameId);
@@ -230,7 +230,7 @@ namespace Lotographia.Controllers
                         tw.WriteLine(line);
                     }
                 }
-                
+
                 tw.WriteLine("");
                 tw.WriteLine("");
 
@@ -324,13 +324,13 @@ namespace Lotographia.Controllers
         }
 
         [HttpPut("participant/{playerId}/add")]
-        public async Task<IActionResult> PutAddPlayer(int playerId)
+        public async Task<IActionResult> PutAddPlayer(long playerId)
         {
             try
             {
                 var user = HttpContext.User;
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var gameType = user.FindFirst(ClaimType.GameType).Value;
                 var participantType = user.FindFirst(ClaimType.ParticipantType).Value;
 
@@ -389,7 +389,7 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "Unauthorised Action" });
                 }
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var game = await _context.PaperFolliesGames
                     .Include(p => p.Participants)
                     .FirstOrDefaultAsync(g => g.Id == gameId);
@@ -417,7 +417,7 @@ namespace Lotographia.Controllers
             {
                 var user = HttpContext.User;
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var gameType = user.FindFirst(ClaimType.GameType).Value;
                 var playerType = user.FindFirst(ClaimType.ParticipantType).Value;
 
@@ -479,7 +479,7 @@ namespace Lotographia.Controllers
 
                 return StatusCode(StatusCodes.Status200OK, new
                 {
-                    Participants = game.Players.Select(p => ToParticipantAttributesObject(p))
+                    Participants = game.Participants.Select(p => ToParticipantAttributesObject(p))
                 });
             }
             catch (Exception exception)
@@ -495,7 +495,7 @@ namespace Lotographia.Controllers
             {
                 var user = HttpContext.User;
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var gameType = user.FindFirst(ClaimType.GameType).Value;
                 var playerType = user.FindFirst(ClaimType.ParticipantType).Value;
 
@@ -533,7 +533,7 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "Unauthorised Action" });
                 }
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
 
                 var game = await _context.PaperFolliesGames
                     .Include(p => p.Participants)
@@ -566,8 +566,44 @@ namespace Lotographia.Controllers
             }
         }
 
-        [HttpPut("game/publish")]
-        public async Task<IActionResult> PutPublishGame()
+        [HttpGet("game/final")]
+        public async Task<IActionResult> GetFinalGame()
+        {
+            try
+            {
+                var user = HttpContext.User;
+
+                var gameType = user.FindFirst(ClaimType.GameType).Value;
+
+                if (gameType != GameType.PaperFollies)
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "Unauthorised Action" });
+                }
+
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
+
+                var game = await _context.PaperFolliesGames
+                    .Include(p => p.Participants)
+                    .FirstOrDefaultAsync(g => g.Id == gameId);
+
+                if (!game.Flags.HasFlag(PaperFolliesGameFlags.IsEnded))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "Game is not ended" });
+                }
+
+                return StatusCode(StatusCodes.Status200OK, new
+                {
+                    FinalContents = game.Players.OrderBy(a => a.ContentIndex).Select(p => p.Content)
+                });
+            }
+            catch (Exception exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { title = exception.Message });
+            }
+        }
+
+        [HttpPut("game/share")]
+        public async Task<IActionResult> PutShareGame()
         {
             try
             {
@@ -581,10 +617,10 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "Unauthorised Action" });
                 }
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
                 var game = await _context.PaperFolliesGames.FindAsync(gameId);
 
-                game.Flags |= PaperFolliesGameFlags.IsPublished;
+                game.Flags |= PaperFolliesGameFlags.IsShared;
 
                 await _context.SaveChangesAsync();
 
@@ -597,7 +633,7 @@ namespace Lotographia.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet("game/final/{gameCode}")]
+        [HttpGet("final/code/{gameCode}")]
         public async Task<IActionResult> GetFinalFromCode(string gameCode)
         {
             try
@@ -610,9 +646,9 @@ namespace Lotographia.Controllers
                 {
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "Game not found" });
                 }
-                else if (!game.Flags.HasFlag(PaperFolliesGameFlags.IsPublished))
+                else if (!game.Flags.HasFlag(PaperFolliesGameFlags.IsShared))
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "Game not published" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "Game not shared" });
                 }
                 else
                 {
@@ -644,7 +680,7 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "wrong game type" });
                 }
 
-                var participantId = int.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
+                var participantId = long.Parse(user.FindFirst(ClaimType.ParticipantId).Value);
                 var participant = await _context.PaperFolliesParticipants
                     .Include(p => p.Game)
                     .FirstOrDefaultAsync(p => p.Id == participantId);
@@ -803,7 +839,10 @@ namespace Lotographia.Controllers
                     {
                         Content = participant.FollowingPlayer?.Content ?? "",
                         ContentVersion = participant.FollowingPlayer?.ContentVersion ?? 0
-                    }
+                    },
+                    FinalContents = game.Flags.HasFlag(PaperFolliesGameFlags.IsEnded) ?
+                    game.Players.OrderBy(a => a.ContentIndex).Select(p => p.Content) :
+                    new List<string> { }
                 });
             }
             catch (Exception exception)
@@ -826,7 +865,7 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "wrong game type" });
                 }
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
 
                 var game = await _context.PaperFolliesGames
                     .Include(b => b.Participants)
@@ -857,12 +896,15 @@ namespace Lotographia.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { title = "wrong game type" });
                 }
 
-                var gameId = int.Parse(user.FindFirst(ClaimType.GameId).Value);
-                var game = await _context.PaperFolliesGames.FindAsync(gameId);
+                var gameId = long.Parse(user.FindFirst(ClaimType.GameId).Value);
+                var game = await _context.PaperFolliesGames
+                    .Include(g => g.Participants)
+                    .FirstOrDefaultAsync(g => g.Id == gameId);
 
                 return StatusCode(StatusCodes.Status200OK, new
                 {
-                    GameState = ToGameStateObject(game)
+                    GameState = ToGameStateObject(game),
+                    Participants = game.Participants.Select(p => ToParticipantAttributesObject(p))
                 });
             }
             catch (Exception exception)
@@ -960,7 +1002,7 @@ namespace Lotographia.Controllers
                 return StatusCode(StatusCodes.Status200OK, new
                 {
                     PlayerToken = playerToken,
-                    Participant = ToParticipantObject(player)
+                    ParticipantAttributes = ToParticipantAttributesObject(player)
                 });
             }
             catch (Exception exception)
@@ -997,7 +1039,7 @@ namespace Lotographia.Controllers
                 IsStarted = game.Flags.HasFlag(PaperFolliesGameFlags.IsStarted),
                 IsEnding = game.Flags.HasFlag(PaperFolliesGameFlags.IsEnding),
                 IsEnded = game.Flags.HasFlag(PaperFolliesGameFlags.IsEnded),
-                IsPublished = game.Flags.HasFlag(PaperFolliesGameFlags.IsPublished)
+                IsShared = game.Flags.HasFlag(PaperFolliesGameFlags.IsShared)
             };
         }
 

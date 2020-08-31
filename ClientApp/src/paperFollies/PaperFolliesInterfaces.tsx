@@ -39,7 +39,7 @@ export interface GameState {
   isStarted: boolean,
   isEnding: boolean,
   isEnded: boolean,
-  isPublished: boolean
+  isShared: boolean
 }
 
 // things that are set once game started

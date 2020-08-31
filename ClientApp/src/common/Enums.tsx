@@ -2,7 +2,8 @@ export enum FontFamily {
   Monospace = "monospace",
   Serif = "serif",
   SansSerif = "sansSerif",
-  Journal = "journal"
+  Journal = "journal",
+  Gandhi = "gandhi"
 }
 
 export enum TextType {

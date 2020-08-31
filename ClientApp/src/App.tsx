@@ -6,7 +6,7 @@ import { About } from "./categories/About";
 import { Lotophagia } from "./categories/Lotophagia";
 import { Photographia } from "./categories/Photographia";
 import { CapitalParty } from "./pictures/CapitalParty";
-import { MeticulousSkeleton } from "./pictures/MeticulousSkeleton";
+import { Capricotta } from "./pictures/Capricotta";
 import { LayersTool } from "./pictures/LayersTool";
 import { PaperFollies } from "./paperFollies/PaperFollies";
 import { Style } from "./components/Style";
@@ -22,7 +22,7 @@ export default class App extends React.Component {
         <Route path="/lotophagia" component={Lotophagia} />
         <Route path="/photographia" component={Photographia} />
         <Route path="/capital-party" component={CapitalParty} />
-        <Route path="/meticulous-skeleton" component={MeticulousSkeleton} />
+        <Route path="/capricotta" component={Capricotta} />
         <Route path="/layers-tool" component={LayersTool} />
         <Route path="/paper-follies" component={PaperFollies} />
         <Route path="/style" component={Style} />

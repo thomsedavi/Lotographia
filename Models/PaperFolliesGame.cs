@@ -8,7 +8,7 @@ namespace Lotographia.Models
 {
     public class PaperFolliesGame
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Code { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
@@ -37,6 +37,6 @@ namespace Lotographia.Models
         IsStarted = 1 << 5,
         IsEnding = 1 << 6,
         IsEnded = 1 << 7,
-        IsPublished = 1 << 8
+        IsShared = 1 << 8
     }
 }

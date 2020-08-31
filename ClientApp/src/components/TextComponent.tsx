@@ -40,7 +40,7 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
   props.textElements.map((textElement: TextElement, index: number) => {
     if (textElement.type === TextType.Custom) {
       children.push(<div className="component" key={`component${index}`}>
-        <textarea className="textArea" rows={2} cols={32}
+        <textarea className="textArea" rows={4} cols={40}
           onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => props.onChange(event.target.value, index)}
           value={textElement.text}
           placeholder={textElement.placeholder} />
@@ -75,6 +75,9 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
       case FontFamily.Journal:
         fontFamily = "journalregular";
         fontSize = "1.4em";
+        break;
+      case FontFamily.Gandhi:
+        fontFamily = "gandhi_serifregular";
         break;
       case FontFamily.Monospace:
       default:

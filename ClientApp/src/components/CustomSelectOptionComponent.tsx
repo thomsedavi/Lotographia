@@ -9,11 +9,11 @@ interface CustomSelectOptionComponentProps {
 }
 
 const CustomSelectOptionComponent: React.StatelessComponent<CustomSelectOptionComponentProps> = (props) => {
-  return <div className={`option${props.active ? " active" : ""}${props.selected ? " selected" : ""}`} onClick={props.onClick}>
+  return <button disabled={!props.active} className={`option${props.selected ? " selected" : ""}`} onClick={props.onClick}>
     {props.buttonOption.objectUrl && <img className={`image ${props.buttonOption.float}`} src={props.buttonOption.objectUrl} />} 
     {props.buttonOption.name && <div className="name">{props.buttonOption.name}</div>}
     {props.buttonOption.description && <div className="description">{props.buttonOption.description}</div>}
-  </div>;
+  </button>;
 }
 
 export { CustomSelectOptionComponent }
