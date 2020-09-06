@@ -33,11 +33,11 @@ const ComponentContainer: React.StatelessComponent<ComponentContainerProps> = (p
   let actionButtons: JSX.Element[] = [];
 
   if (props.actionButtons !== undefined)
-    actionButtons = props.actionButtons.map((button: Button, index: number) => <button className={button.class} disabled={!button.isActive} key={`button${index}`} onClick={button.isActive ? button.onClick : () => { }}>
+    actionButtons = props.actionButtons.map((button: Button, index: number) => <button className={button.class} disabled={!button.isActive} key={`actionButton${index}`} onClick={button.isActive ? button.onClick : () => { }}>
       {button.name}
     </button>);
 
-  const navigationButtons = props.navigationButtons.map((button: Button, index: number) => <button className={button.class} key={`button${index}`} disabled={!button.isActive} onClick={button.isActive ? button.onClick : () => { }}>
+  const navigationButtons = props.navigationButtons.map((button: Button, index: number) => <button className={button.class} key={`navigationButton${index}`} disabled={!button.isActive} onClick={button.isActive ? button.onClick : () => { }}>
     {button.name}
   </button>);
 

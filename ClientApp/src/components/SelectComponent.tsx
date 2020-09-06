@@ -11,7 +11,8 @@ export interface SelectComponentProps extends ComponentProps {
   selectedDescription?: string,
   selectedImageUrl?: string,
   hasImage: boolean,
-  selectTitle: string
+  selectTitle: string,
+  footnote?: JSX.Element
 }
 
 const SelectComponent: React.StatelessComponent<SelectComponentProps> = (props) => {
@@ -35,6 +36,8 @@ const SelectComponent: React.StatelessComponent<SelectComponentProps> = (props) 
       {props.selectedDescription && <div className="description">{props.selectedDescription}</div>}
     </button>
   </div>);
+
+  props.footnote !== undefined && children.push(props.footnote);
 
   return <ComponentContainer
     actionButtons={props.actionButtons}

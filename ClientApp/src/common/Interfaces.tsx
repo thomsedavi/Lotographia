@@ -71,7 +71,9 @@ export interface Layer {
   shownText?: string,
   hiddenText?: string,
   displayRemainder?: boolean,
-  remainderFraction?: number
+  remainderFraction?: number,
+  isOpen?: boolean,
+  key?: number
 }
 
 export interface Option {
@@ -98,5 +100,6 @@ export interface GameOptionDetails extends GameDetails {
   id: string,
   name: string,
   prompt: string,
-  footnote: string
+  footnote: string,
+  caption?: string
 }

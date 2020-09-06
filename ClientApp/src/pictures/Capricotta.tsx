@@ -305,6 +305,11 @@ export class Capricotta extends React.Component<any, CapricottaState> {
       //  }
       //  break;
       case 1:
+        const footnote: JSX.Element = <div className="component" key="urlLink">
+          <div className="note">Share this game:</div>
+          <div className="information"><code>{window.location.origin}/capricotta?gameid={this.state.game.id}</code></div>
+        </div>;
+
         const isReady: boolean = !this.state.waitingToSubmit &&
           !this.state.waitingForReturn &&
           this.state.optionImages[game.id].objectUrl !== undefined;
@@ -335,7 +340,8 @@ export class Capricotta extends React.Component<any, CapricottaState> {
           selectedDescription: game.prompt,
           hasImage: true,
           selectedImageUrl: this.state.optionImages[game.id].objectUrl,
-          selectTitle: this.title
+          selectTitle: this.title,
+          footnote: footnote
         }
         break;
       case 2:
@@ -457,6 +463,7 @@ export class Capricotta extends React.Component<any, CapricottaState> {
           information: game.footnote,
           previewURL: this.state.previewURL,
           displayTitle: this.title,
+          caption: game.caption
         };
         break;
       default:

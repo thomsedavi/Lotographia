@@ -1,5 +1,6 @@
 import { GameOptionDetails, LoadedImage } from "../common/Interfaces";
 
+import { OnBrand } from "./capricottaGames/7_OnBrand";
 import { FanTales } from "./capricottaGames/6_FanTales";
 import { OfficeMeeting } from "./capricottaGames/5_OfficeMeeting";
 import { ToyBox } from "./capricottaGames/4_ToyBox";
@@ -8,6 +9,7 @@ import { SpaceVoyage } from "./capricottaGames/2_SpaceVoyage";
 import { EnchantedWoods } from "./capricottaGames/1_EnchantedWoods";
 
 export const Images: { [id: string]: LoadedImage } = {
+  ["onbrand"]: { src: "capricotta/OnBrandIcon.png" },
   ["fantales"]: { src: "capricotta/FanTalesIcon.png" },
   ["officemeeting"]: { src: "capricotta/OfficeMeetingIcon.png" },
   ["toybox"]: { src: "capricotta/ToyBoxIcon.png" },
@@ -17,6 +19,7 @@ export const Images: { [id: string]: LoadedImage } = {
 }
 
 export const Games: GameOptionDetails[] = [
+  OnBrand,
   FanTales,
   OfficeMeeting,
   ToyBox,
@@ -25,4 +28,4 @@ export const Games: GameOptionDetails[] = [
   SpaceVoyage
 ]
 
-export const DefaultGameId: string = "fantales";
+export const DefaultGameId: string = "onbrand";

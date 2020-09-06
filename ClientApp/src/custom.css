@@ -130,6 +130,13 @@
     font-weight: 700;
 }
 
+.caption {
+    color: var(--medium-blue-color);
+    font-size: 0.7em;
+    margin-bottom: 0.5em;
+    text-align: right;
+}
+
 .information {
     display: inline-block;
     font-size: 1.1em;
@@ -459,4 +466,17 @@ code {
     position: absolute;
     right: 0;
     top: -0.5em;
+}
+
+.toggle {
+    border: none;
+    color: var(--darkest-blue-color);
+    background-color: var(--light-blue-color);
+    font-size: 0.5em;
+    padding: 0 0.5em;
+    border-radius: 0.4em;
+}
+
+.toggle:hover {
+    background-color: var(--light-blue-hover-color);
 }

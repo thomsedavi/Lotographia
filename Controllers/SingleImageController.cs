@@ -202,6 +202,17 @@ namespace Lotographia.Controllers
                 };
 
                 DrawLayer(baseImage, graphics, layer, layerImage);
+
+                if (details.ShowOrigins)
+                {
+                    layer.HiddenText = "_";
+                    layer.BackgroundColor = "#F00";
+                    layer.TextColor = "#F00";
+
+                    var originImage = GetPhraseImage(layer, graphics);
+
+                    DrawLayer(baseImage, graphics, layer, originImage);
+                }
             }
 
             var lotoPhrase = new Layer
@@ -451,6 +462,7 @@ namespace Lotographia.Controllers
         public int Width { get; set; }
         public string LotoColour { get; set; }
         public string LotoBackground { get; set; }
+        public bool ShowOrigins { get; set; } = false;
     }
 
     public enum LayerType

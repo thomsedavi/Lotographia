@@ -37,6 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="ClientApp\public\TwitterCardImage.png" />
     <None Remove="ClientApp\src\App.tsx" />
     <None Remove="ClientApp\src\paperFollies\PaperFollies.tsx" />
     <None Remove="ClientApp\src\paperFollies\PaperFolliesEnums.tsx" />
@@ -64,6 +65,7 @@
     <None Remove="ClientApp\src\index.tsx" />
     <None Remove="ClientApp\src\pictures\Capricotta.tsx" />
     <None Remove="ClientApp\src\pictures\capricottaGames\6_FanTales.tsx" />
+    <None Remove="ClientApp\src\pictures\capricottaGames\7_OnBrand.tsx" />
     <None Remove="ClientApp\src\pictures\LayersTool.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames.tsx" />
     <None Remove="ClientApp\src\pictures\capricottaGames\1_EnchantedWoods.tsx" />
@@ -76,6 +78,13 @@
     <None Remove="ClientApp\src\common\Enums.tsx" />
     <None Remove="ClientApp\src\common\Interfaces.tsx" />
     <None Remove="ClientApp\src\common\Utils.tsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ClientApp\public\TwitterCardImage.png">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

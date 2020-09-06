@@ -7,14 +7,15 @@ import { Layer } from "../common/Interfaces";
 import { getProcessedImageObjectURL } from "../common/Utils";
 
 interface LayersToolState {
-  stage: number;
-  previewURL?: string;
-  loadedImages: number;
-  layers: Layer[];
+  stage: number,
+  previewURL?: string,
+  loadedImages: number,
+  layers: Layer[],
+  showOrigins: boolean
 }
 
 export class LayersTool extends React.Component<any, LayersToolState> {
-  base: string = "Capricotta/OfficeMeeting.png";
+  base: string = "Capricotta/OnBrand.png";
   height: number = 600;
   width: number = 900;
 
@@ -39,9 +40,12 @@ export class LayersTool extends React.Component<any, LayersToolState> {
           hiddenText: "Hello",
           textColor: "#FFF",
           rotation: 0,
-          deleted: false
+          deleted: false,
+          isOpen: true,
+          key: 0
         }
-      ]
+      ],
+      showOrigins: false
     };
   }
 
@@ -68,7 +72,8 @@ export class LayersTool extends React.Component<any, LayersToolState> {
       layers: this.state.layers.filter(t => !t.deleted),
       width: this.width,
       lotoColour: "#fff",
-      lotoBackground: "#000"
+      lotoBackground: "#000",
+      showOrigins: this.state.showOrigins
     }
   }
 
@@ -76,6 +81,12 @@ export class LayersTool extends React.Component<any, LayersToolState> {
     this.setState({
       layers: layers
     });
+  }
+
+  toggleShowOrigins = () => {
+    this.setState(prevState => ({
+      showOrigins: !prevState.showOrigins
+    }));
   }
 
   updateImage = () => {
@@ -118,13 +129,15 @@ export class LayersTool extends React.Component<any, LayersToolState> {
           layersToolTitle: "Page",
           layers: this.state.layers,
           updateLayers: this.updateLayers,
+          toggleShowOrigins: this.toggleShowOrigins,
           navigationButtons: [],
           updateImage: this.updateImage,
           contents: [
             "Draw some things!",
             "Everything is great"
           ],
-          previewURL: this.state.previewURL
+          previewURL: this.state.previewURL,
+          showOrigins: this.state.showOrigins
         };
         break;
       default:
