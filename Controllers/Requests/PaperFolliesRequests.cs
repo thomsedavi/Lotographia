@@ -44,7 +44,6 @@
 
     public class PutContentRequest
     {
-        public bool IsFinal { get; set; }
         public string Content { get; set; }
     }
 }

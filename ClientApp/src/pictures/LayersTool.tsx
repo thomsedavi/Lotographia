@@ -15,9 +15,9 @@ interface LayersToolState {
 }
 
 export class LayersTool extends React.Component<any, LayersToolState> {
-  base: string = "Capricotta/OnBrand.png";
-  height: number = 600;
-  width: number = 900;
+  base: string = "Capricotta/Industry.png";
+  height: number = 900;
+  width: number = 600;
 
   constructor(props: any) {
     super(props);

@@ -16,21 +16,7 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
   const children: JSX.Element[] = [];
 
   if (props.requiredTexts !== undefined && props.requiredTexts.length > 0) {
-    const texts: (JSX.Element | string)[] = [`Required word${props.requiredTexts.length > 1 ? "s" : ""}: ` ];
-
-    props.requiredTexts.map((text: RequiredText, index: number) => {
-      // use classes instead of styles
-      texts.push(<div style={{ fontWeight: 700, display: "inline-block", color: text.isMissing ? "#f33" : "#048" }}>{text.text}</div>)
-
-      if (props.requiredTexts !== undefined && props.requiredTexts.length === 2 && index === props.requiredTexts.length - 2)
-        texts.push(" and ");
-
-      if (props.requiredTexts !== undefined && props.requiredTexts.length > 2 && index < props.requiredTexts.length - 2)
-        texts.push(", ");
-
-      if (props.requiredTexts !== undefined && props.requiredTexts.length > 2 && index === props.requiredTexts.length - 2)
-        texts.push(", and ");
-    });
+    const texts: (JSX.Element | string)[] = getRequiredTextsElement(props.requiredTexts);
 
     children.push(<div className="component" key="componentRequiredText">
       <div className="information">{texts}</div>
@@ -269,6 +255,30 @@ export const mapToTextComponents = (textElements: TextElement[], substituteTexts
 
 export const isTextComponent = (object: ComponentProps): object is TextComponentProps => {
   return "textTitle" in object;
+}
+
+export const getRequiredTextsElement = (requiredTexts: RequiredText[]) => {
+  if (requiredTexts.length === 0) {
+    return ["No required words!"];
+  }
+
+  const texts: (JSX.Element | string)[] = [`Required word${requiredTexts.length > 1 ? "s" : ""}: `];
+
+  requiredTexts.map((text: RequiredText, index: number) => {
+    // use classes instead of styles
+    texts.push(<div style={{ fontWeight: 700, display: "inline-block", color: text.isMissing ? "#f33" : "#048" }}>{text.text}</div>)
+
+    if (requiredTexts !== undefined && requiredTexts.length === 2 && index === requiredTexts.length - 2)
+      texts.push(" and ");
+
+    if (requiredTexts !== undefined && requiredTexts.length > 2 && index < requiredTexts.length - 2)
+      texts.push(", ");
+
+    if (requiredTexts !== undefined && requiredTexts.length > 2 && index === requiredTexts.length - 2)
+      texts.push(", and ");
+  });
+
+  return texts;
 }
 
 export { TextComponent }

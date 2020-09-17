@@ -1,5 +1,10 @@
 ﻿using Lotographia.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Lotographia.Data
 {
@@ -58,9 +63,27 @@ namespace Lotographia.Data
             paperFolliesParticipant.HasOne(a => a.FollowingPlayer)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Restrict);
+
+            var lexicologerGame = modelBuilder.Entity<LexicologerGame>();
+
+            lexicologerGame.Property(b => b.Title)
+                .HasMaxLength(255);
+
+            lexicologerGame.Property(b => b.Details)
+                .HasMaxLength(4000);
+
+            var valueComparer = new ValueComparer<List<LexicologerWord>>(
+                (c1, c2) => c1.SequenceEqual(c2),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => c.ToList());
+
+            lexicologerGame.Property(g => g.Words)
+                .HasConversion(w => JsonConvert.SerializeObject(w), w => JsonConvert.DeserializeObject<List<LexicologerWord>>(w))
+                .Metadata.SetValueComparer(valueComparer);
         }
 
         public DbSet<PaperFolliesGame> PaperFolliesGames { get; set; }
         public DbSet<PaperFolliesParticipant> PaperFolliesParticipants { get; set; }
+        public DbSet<LexicologerGame> LexicologerGames { get; set; }
     }
 }

@@ -1,5 +1,15 @@
 import { ImageFloat } from "../common/Enums";
 
+class OptionGroup {
+  label: string;
+  options: SelectOption[];
+
+  constructor(label: string, options: SelectOption[]) {
+    this.label = label;
+    this.options = options;
+  }
+}
+
 class SelectOption {
   id: string;
   name: string;
@@ -24,4 +34,4 @@ class CustomSelectOption extends SelectOption {
   }
 }
 
-export { CustomSelectOption, SelectOption }
+export { CustomSelectOption, SelectOption, OptionGroup }

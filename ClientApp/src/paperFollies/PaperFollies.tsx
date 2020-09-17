@@ -289,7 +289,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
     });
   }
 
-  updateContent = (isFinal: boolean) => {
+  updateContent = () => {
     if (!this.state.fetchingData) {
       this.setState({
         fetchingData: true,
@@ -297,8 +297,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
       });
 
       const body: PutContentRequest = {
-        content: this.state.participant.state.content.trim(),
-        isFinal: isFinal
+        content: this.state.participant.state.content.trim()
       };
 
       fetch(`api/paperFollies/participant/content`, {
@@ -317,7 +316,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           if (response.status === 200) {
             const participant = this.state.participant;
             participant.state.contentVersion = participant.state.contentVersion + 1;
-            participant.state.isEnded = isFinal || this.state.game.state.isEnding;
+            participant.state.isEnded = this.state.game.state.isEnding;
 
             this.setState({
               participant: participant,
@@ -1546,7 +1545,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           <div className="component">
             <label htmlFor="description">Description</label>
             <br />
-            <textarea id="description" value={this.state.game.attributes.description} placeholder="What is it all about?" rows={2} cols={32} maxLength={4000} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changeDescription(event.target.value)} />
+            <textarea id="description" value={this.state.game.attributes.description} placeholder="What is it all about?" rows={4} cols={40} maxLength={4000} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changeDescription(event.target.value)} />
             <br />
             <div className="note">A prompt for players to start from, for example "The Adventures of Sally Buccaneer, 1930s Astronaut, and her pet Martian Poodle, Written in the First Person". Be as specific or vague as you wish.</div>
             <br />
@@ -1693,7 +1692,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           <div className="component">
             <label htmlFor="biography">Your Biography</label>
             <br />
-            <textarea id="biography" value={this.state.participant.attributes.biography} placeholder="Who are you all about?" rows={2} cols={32} maxLength={4000} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changeParticipantBiography(event.target.value)} />
+            <textarea id="biography" value={this.state.participant.attributes.biography} placeholder="Who are you all about?" rows={4} cols={40} maxLength={4000} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changeParticipantBiography(event.target.value)} />
             <br />
             <div className="note">A little bit about yourself for other people to see (optional).</div>
           </div>
@@ -1943,12 +1942,55 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             </div>
           );
 
+          const playerAttributes: JSX.Element[] = this.addedPlayers().map((attributes: ParticipantAttributes, playerIndex: number) => {
+            const biography: JSX.Element[] = attributes.biography ? attributes.biography.split("\n").map((biographyLine: string, biographyIndex: number) =>
+              <div key={`attributes${playerIndex}biography${biographyIndex}`} className="information">
+                {biographyLine}
+              </div>
+            ) : [];
+
+            return <div key={`attributes${playerIndex}`}>
+              <div className="text">Player {playerIndex + 1}: {attributes.name}</div>
+              {attributes.biography && biography}
+              {attributes.biography && <br />}
+              <br />
+            </div>
+          });
+
+          const admin = this.state.participants.filter(p => p.isAdmin)[0];
+
+          if (admin && !admin.isPlayer) {
+            const adminBio: JSX.Element[] = admin.biography ? admin.biography.split("\n").map((biographyLine: string, biographyIndex: number) =>
+              <div key={`attributes${playerIndex}biography${biographyIndex}`} className="information">
+                {biographyLine}
+              </div>
+            ) : [];
+
+            playerAttributes.push(<div key="attributesAdmin">
+              <div className="text">Admin: {admin.name}</div>
+              {adminBio}
+              <br />
+              <br />
+            </div>);
+          }
+
           component = <div key={`${GamePage.Entry}-${EntryView.Details}`}>
+            <div className="component">
+              <div className="subtitle">Details</div>
+            </div>
+            <div className="component">
+              {description}
+            </div>
             <div className="component">
               <div className="note">
                 Code: {this.state.game.attributes.code}
               </div>
-              {description}
+            </div>
+            <div className="component">
+              <div className="subtitle">Players</div>
+            </div>
+            <div className="component">
+              {playerAttributes}
             </div>
           </div>;
         } else if (this.state.entryView === EntryView.Preceding) {
@@ -1982,16 +2024,13 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
               <div className="note">You are writing segment {this.state.participant.attributes.contentIndex} of {this.addedPlayers().length}! Write something that you think might work as the {this.getNumberth(this.state.participant.attributes.contentIndex)} segment of this story/poem/thing.</div>
             </div>}
             <div className="component">
-              <textarea value={this.state.participant.state.content} placeholder="It was a dark and stormy night..." rows={2} cols={32} maxLength={Number(this.state.game.attributes.characterLimit)} disabled={this.state.game.state.isEnded || this.state.participant.state.isEnded} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changePlayerContent(event.target.value)} />
+              <textarea value={this.state.participant.state.content} placeholder="It was a dark and stormy night..." rows={4} cols={40} maxLength={Number(this.state.game.attributes.characterLimit)} disabled={this.state.game.state.isEnded || this.state.participant.state.isEnded} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => this.changePlayerContent(event.target.value)} />
               <br />
               <div className="note">(Version {this.state.participant.state.contentVersion}, character count {this.state.participant.state.content.trim().length}/{this.state.game.attributes.characterLimit})</div>
             </div>
             <div className="component buttons">
-              <button className="action" disabled={this.state.game.state.isEnded || !this.state.participant.state.content.trim() || this.state.participant.state.content.trim() === this.state.contentOld || this.state.game.state.isEnding || this.state.game.state.isEnded || this.state.participant.state.isEnded} onClick={() => this.updateContent(false)}>Share {this.state.participant.state.contentVersion === 0 ? "First" : "New"} Update</button>
+              <button className="action" disabled={this.state.game.state.isEnded || !this.state.participant.state.content.trim() || this.state.participant.state.content.trim() === this.state.contentOld || this.state.game.state.isEnding || this.state.game.state.isEnded || this.state.participant.state.isEnded} onClick={() => this.updateContent()}>Share {this.state.participant.state.contentVersion === 0 ? "First" : "New"} Update</button>
             </div>
-            {this.state.participant.state.contentVersion > 0 && <div className="component buttons">
-              <button className="action" disabled={this.state.game.state.isEnded || !this.state.participant.state.content.trim() || this.state.game.state.isEnded || this.state.participant.state.isEnded} onClick={() => this.changeEntryView(EntryView.End)}>Share Final Update</button>
-            </div>}
             {this.state.game.state.isEnding && !this.state.game.state.isEnded && <div className="component">
               <div className="emphasis">Game is ending! Can only share one more update.</div>
             </div>}
@@ -2013,16 +2052,6 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             </div>
             <div className="component">
               {followingContentsElements}
-            </div>
-          </div>;
-        } else if (this.state.entryView === EntryView.End) {
-          component = <div key={`${GamePage.Entry}-${EntryView.End}`}>
-            <div className="component">
-              <div className="information">Once you confirm your last update, you won't be able to change your content any more!</div>
-            </div>
-            <div className="component buttons">
-              <button className="action" disabled={this.state.fetchingData} onClick={() => this.changeEntryView(EntryView.Player)}>Cancel</button>
-              <button className="action" disabled={this.state.fetchingData} onClick={() => this.updateContent(true)}>Confirm</button>
             </div>
           </div>;
         }
@@ -2360,7 +2389,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           this.state.shownInfos["info1"] &&
           <div className="component help-container">
             <div className="help-message">Click 'Details' to show the game details!</div>
-            <div className="help-message">When an adjacent player updates their segment, their button will change colour</div>
+            <div className="help-message">When an adjacent player updates their segment, their button will change colour.</div>
             <div className="help-message">You can continue editing and updating your segment while waiting for other people.</div>
             <div className="help-close" onClick={() => this.closeHelp("info1")}>X</div>
           </div>}

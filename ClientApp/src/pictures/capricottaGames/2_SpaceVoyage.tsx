@@ -1,5 +1,5 @@
 import { GameOptionDetails } from "../../common/Interfaces";
-import { FontFamily, LayerType } from "../../common/Enums";
+import { FontFamily, LayerType, Orientation } from "../../common/Enums";
 
 export const SpaceVoyage: GameOptionDetails = {
   id: "spacevoyage",
@@ -151,6 +151,7 @@ export const SpaceVoyage: GameOptionDetails = {
   ],
   height: 600,
   width: 900,
+  orientation: Orientation.Landscape,
   base: "Capricotta/SpaceVoyage.png",
   lotoColour: "#fff",
   lotoBackground: "#000"

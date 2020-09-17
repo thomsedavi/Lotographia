@@ -24,6 +24,5 @@ export interface LoginRequest {
 }
 
 export interface PutContentRequest {
-  content: string,
-  isFinal: boolean
+  content: string
 }

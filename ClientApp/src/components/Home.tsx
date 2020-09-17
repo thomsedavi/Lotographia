@@ -111,7 +111,7 @@ export class Home extends React.Component<any, HomeState> {
             /></NavLink>
           </div>
           <div className="component">
-            <div className="emphasis">Paper Follies is a creative writing game for three or more players where all players are writing on the same piece but can only see what one or two of the other players are writing.</div>
+            <div className="emphasis">Paper Follies is a creative writing game for three or more players. Each player is given a segment of a piece of writing to work on, but can only see a limited amount of what other people are writing!</div>
           </div>
         </div>
         <div className="section">

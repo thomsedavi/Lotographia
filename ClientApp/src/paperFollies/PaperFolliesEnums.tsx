@@ -54,8 +54,7 @@ export enum EntryView {
   Details = "details",
   Preceding = "preceding",
   Player = "player",
-  Following = "following",
-  End = "end"
+  Following = "following"
 }
 
 export enum FinalView {

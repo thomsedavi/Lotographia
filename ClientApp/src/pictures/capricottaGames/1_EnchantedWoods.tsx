@@ -1,5 +1,5 @@
 import { GameOptionDetails } from "../../common/Interfaces";
-import { FontFamily, LayerType } from "../../common/Enums";
+import { FontFamily, LayerType, Orientation } from "../../common/Enums";
 
 export const EnchantedWoods: GameOptionDetails = {
   id: "enchantedwoods",
@@ -148,6 +148,7 @@ export const EnchantedWoods: GameOptionDetails = {
   ],
   height: 600,
   width: 900,
+  orientation: Orientation.Landscape,
   base: "Capricotta/EnchantedWoods.png",
   lotoColour: "#fff",
   lotoBackground: "none"

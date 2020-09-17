@@ -56,6 +56,9 @@ export class Style extends React.Component<any, StyleState> {
         <div className="component">
           <div className="subtitle">This Is What The Subtitle Looks Like</div>
         </div>
+        <div className="component">
+          <hr />
+        </div>
         <div className="component help-container">
           <div className="help-message">Here is some info for you to close!</div>
           <div className="help-close">X</div>

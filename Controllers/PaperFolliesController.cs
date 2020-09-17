@@ -694,7 +694,7 @@ namespace Lotographia.Controllers
                 participant.Content = putContentRequest.Content;
                 participant.ContentVersion += 1;
 
-                if (participant.Game.Flags.HasFlag(PaperFolliesGameFlags.IsEnding) || putContentRequest.IsFinal)
+                if (participant.Game.Flags.HasFlag(PaperFolliesGameFlags.IsEnding))
                 {
                     participant.Flags |= PaperFolliesParticipantFlags.IsEnded;
                 }
@@ -787,7 +787,6 @@ namespace Lotographia.Controllers
                     ParticipantToken = participantToken,
                     Participant = ToParticipantObject(participant)
                 });
-
             }
             catch (Exception exception)
             {

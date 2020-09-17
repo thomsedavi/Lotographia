@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { ComponentContainer, ComponentProps } from './ComponentContainer';
-import { SelectOption } from './SelectOption';
+import { SelectOption, OptionGroup } from './SelectOption';
 import { ImageLoading } from '../common/Assets';
 
 export interface SelectComponentProps extends ComponentProps {
   options: SelectOption[],
+  optionGroups: OptionGroup[],
   onClick: (id: any) => void,
   selectedId?: string,
   selectedName?: string,
@@ -16,8 +17,17 @@ export interface SelectComponentProps extends ComponentProps {
 }
 
 const SelectComponent: React.StatelessComponent<SelectComponentProps> = (props) => {
-  const optionsComponents = props.options.map((option, index) =>
+  const optionsComponents = props.options.map((option: SelectOption, index: number) =>
     <option key={`option${index}`} value={option.id}>{option.name}</option>);
+
+  const optionGroupComponents = props.optionGroups.map((optionGroup: OptionGroup, groupIndex: number) => {
+    const optionsGroupOptionsComponents = optionGroup.options.map((option: SelectOption, optionIndex: number) =>
+      <option key={`optionGroup${groupIndex}option${optionIndex}`} value={option.id}>{option.name}</option>);
+
+    return <optgroup label={optionGroup.label} key={`optionGroup${groupIndex}`}>
+      {optionsGroupOptionsComponents}
+    </optgroup>;
+  });
 
   const children: JSX.Element[] = [];
 
@@ -25,6 +35,7 @@ const SelectComponent: React.StatelessComponent<SelectComponentProps> = (props) 
     <select onChange={(event: React.ChangeEvent<HTMLSelectElement>) => props.onClick(event.currentTarget.value)}
       value={props.selectedId}>
       {optionsComponents}
+      {optionGroupComponents}
     </select>
   </div>);
 

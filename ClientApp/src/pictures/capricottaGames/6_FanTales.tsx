@@ -1,5 +1,5 @@
 ﻿import { GameOptionDetails } from "../../common/Interfaces";
-import { FontFamily, LayerType } from "../../common/Enums";
+import { FontFamily, LayerType, Orientation } from "../../common/Enums";
 
 export const FanTales: GameOptionDetails = {
   id: "fantales",
@@ -9,6 +9,7 @@ export const FanTales: GameOptionDetails = {
   caption: "Font: Gandhi Serif by Librerias Gandhi",
   height: 600,
   width: 900,
+  orientation: Orientation.Landscape,
   base: "Capricotta/FanTales.png",
   lotoColour: "#fff",
   lotoBackground: "#065",

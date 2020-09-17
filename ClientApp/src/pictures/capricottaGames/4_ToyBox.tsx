@@ -1,5 +1,5 @@
 import { GameOptionDetails } from "../../common/Interfaces";
-import { FontFamily, LayerType } from "../../common/Enums";
+import { FontFamily, LayerType, Orientation } from "../../common/Enums";
 
 export const ToyBox: GameOptionDetails = {
   id: "toybox",
@@ -8,6 +8,7 @@ export const ToyBox: GameOptionDetails = {
   footnote: `Most other photos in this game were taken BY me, this is a photo OF me taken by Venetia King in February 2019. While I mostly remember Lego, Transformers and Micro Machines as my childhood toys because I collect them as an adult, I am still familiar with every scratch on the set of wooden blocks in this picture.`,
   height: 600,
   width: 900,
+  orientation: Orientation.Landscape,
   base: "Capricotta/ToyBox.png",
   lotoColour: "#fff",
   lotoBackground: "none",

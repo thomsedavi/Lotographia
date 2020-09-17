@@ -66,6 +66,7 @@
     <None Remove="ClientApp\src\pictures\Capricotta.tsx" />
     <None Remove="ClientApp\src\pictures\capricottaGames\6_FanTales.tsx" />
     <None Remove="ClientApp\src\pictures\capricottaGames\7_OnBrand.tsx" />
+    <None Remove="ClientApp\src\pictures\capricottaGames\8_Industry.tsx" />
     <None Remove="ClientApp\src\pictures\LayersTool.tsx" />
     <None Remove="ClientApp\src\pictures\MeticulousSkeletonGames.tsx" />
     <None Remove="ClientApp\src\pictures\capricottaGames\1_EnchantedWoods.tsx" />
@@ -78,6 +79,11 @@
     <None Remove="ClientApp\src\common\Enums.tsx" />
     <None Remove="ClientApp\src\common\Interfaces.tsx" />
     <None Remove="ClientApp\src\common\Utils.tsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Remove="ClientApp\src\lexicologer\Lexicologer.tsx" />
+    <TypeScriptCompile Remove="ClientApp\src\pictures\WordGameTest.tsx" />
   </ItemGroup>
 
   <ItemGroup>

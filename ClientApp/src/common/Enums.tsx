@@ -27,3 +27,8 @@ export enum ImageFloat {
   Left = "left",
   Right = "right"
 }
+
+export enum Orientation {
+  Landscape = "landscape",
+  Portrait = "portrait"
+}

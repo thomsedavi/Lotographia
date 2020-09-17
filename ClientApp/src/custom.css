@@ -2,6 +2,7 @@
     /* system */
     --white-hover-color: #def;
     --dark-warning-color: #600;
+    --lightest-warning-color: #fdd;
     --light-warning-color: #f00;
     --light-gray-color: #eee;
     /* blue */
@@ -169,6 +170,10 @@ input[type=text] {
 
 input[type=text].error {
     border-color: var(--light-warning-color);
+}
+
+textarea.error {
+    background-color: var(--lightest-warning-color);
 }
 
 input[type=checkbox] {
@@ -479,4 +484,8 @@ code {
 
 .toggle:hover {
     background-color: var(--light-blue-hover-color);
+}
+
+hr {
+    border: 1px solid var(--lightest-blue-hover-color);
 }

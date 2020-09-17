@@ -1,4 +1,4 @@
-import { TextType, TextComponentType, FontFamily, LayerType } from "./Enums";
+import { TextType, TextComponentType, FontFamily, LayerType, Orientation } from "./Enums";
 
 export interface VariantText {
   shownText: string,
@@ -101,5 +101,6 @@ export interface GameOptionDetails extends GameDetails {
   name: string,
   prompt: string,
   footnote: string,
-  caption?: string
+  caption?: string,
+  orientation: Orientation
 }

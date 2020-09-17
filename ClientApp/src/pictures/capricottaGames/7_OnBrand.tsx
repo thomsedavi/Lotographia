@@ -1,5 +1,5 @@
 ﻿import { GameOptionDetails } from "../../common/Interfaces";
-import { FontFamily, LayerType } from "../../common/Enums";
+import { FontFamily, LayerType, Orientation } from "../../common/Enums";
 
 export const OnBrand: GameOptionDetails = {
   id: "onbrand",
@@ -9,6 +9,7 @@ export const OnBrand: GameOptionDetails = {
   caption: "Font: Journal by Fontourist",
   height: 600,
   width: 900,
+  orientation: Orientation.Landscape,
   base: "Capricotta/OnBrand.png",
   lotoColour: "#eee",
   lotoBackground: "#f00",

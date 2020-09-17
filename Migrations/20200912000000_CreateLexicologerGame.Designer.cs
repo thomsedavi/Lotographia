@@ -4,14 +4,16 @@ using Lotographia.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Lotographia.Migrations
 {
     [DbContext(typeof(LotographiaContext))]
-    partial class LotographiaContextModelSnapshot : ModelSnapshot
+    [Migration("20200912220454_CreateLexicologerGame")]
+    partial class CreateLexicologerGame
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

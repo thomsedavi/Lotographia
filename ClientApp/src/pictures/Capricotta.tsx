@@ -3,10 +3,11 @@ import { getComponent } from "../components/ComponentContainer";
 import { InfoComponentProps } from "../components/InfoComponent";
 import { RadioComponentProps } from "../components/RadioComponent";
 import { SelectComponentProps } from "../components/SelectComponent";
+import { OptionGroup, SelectOption } from "../components/SelectOption";
 import { DisplayComponentProps } from "../components/DisplayComponent";
 import { TextComponentProps, mapToTextComponents } from "../components/TextComponent";
 import { SubstituteTexts, GameDetails, ProcessedTextsState, TextComponent, GameOptionDetails, TextElement, RequiredText, GetProcessedTextsBody, LoadedImage, Layer, ProcessedText, Option } from "../common/Interfaces";
-import { TextType, FontFamily } from "../common/Enums";
+import { TextType, FontFamily, Orientation } from "../common/Enums";
 import { getFileImageObjectURL, getProcessedImageObjectURL, getProcessedTexts } from "../common/Utils";
 import { StatusLoading, StatusReady, StatusChecking, StatusTooLong, StatusGood, StatusRequiredWords } from '../common/Assets';
 import { Images, Games, DefaultGameId } from "./CapricottaCollection";
@@ -314,6 +315,20 @@ export class Capricotta extends React.Component<any, CapricottaState> {
           !this.state.waitingForReturn &&
           this.state.optionImages[game.id].objectUrl !== undefined;
 
+        const optionGroups: OptionGroup[] = [];
+
+        const mobileGroup: SelectOption[] = Games.filter(g => g.orientation === Orientation.Portrait).map((game: GameOptionDetails) => new SelectOption(game.id, game.name));
+        optionGroups.push({
+          label: "Mobile",
+          options: mobileGroup
+        });
+
+        const desktopGroup: SelectOption[] = Games.filter(g => g.orientation === Orientation.Landscape).map((game: GameOptionDetails) => new SelectOption(game.id, game.name));
+        optionGroups.push({
+          label: "Desktop",
+          options: desktopGroup
+        });
+
         componentProps = {
           navigationButtons: [
             {
@@ -323,8 +338,12 @@ export class Capricotta extends React.Component<any, CapricottaState> {
               onClick: this.next
             }
           ],
-          contents: ["Each game will give you a set of words to compose a short piece of poetry or fiction out of. After you've finished, your writing will be modified in unexpected ways and added to a picture..."],
-          options: Games,
+          contents: [
+            "Each game will give you a set of words to compose a short piece of poetry or fiction out of. After you've finished, your writing will be modified in unexpected ways and added to a picture...",
+            "Mobile games show a portrait picture with larger text, Desktop games show a landscape picture with smaller text."
+          ],
+          options: [],
+          optionGroups: optionGroups,
           //actionButtons: [
           //  {
           //    class: "action",
