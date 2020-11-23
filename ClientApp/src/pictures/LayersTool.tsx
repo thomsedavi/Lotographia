@@ -1,6 +1,7 @@
 import * as React from "react";
 import { getComponent } from "../components/ComponentContainer";
 import { InfoComponentProps } from "../components/InfoComponent";
+import { TextareaComponentProps } from "../components/TextareaComponent";
 import { LayersToolComponentProps } from "../components/LayersToolComponent";
 import { FontFamily, LayerType } from "../common/Enums";
 import { Layer } from "../common/Interfaces";
@@ -11,11 +12,26 @@ interface LayersToolState {
   previewURL?: string,
   loadedImages: number,
   layers: Layer[],
-  showOrigins: boolean
+  showOrigins: boolean,
+  textarea: string,
+  errorMessage?: string
+}
+
+interface JsonLayer {
+  backgroundColor: string,
+  rotation: number,
+  maximumLength: number,
+  horizontalPosition: number,
+  verticalPosition: number,
+  horizontalAlignment: number,
+  verticalAlignment: number,
+  fontFamily: string,
+  fontSize: number,
+  textColor: string
 }
 
 export class LayersTool extends React.Component<any, LayersToolState> {
-  base: string = "Capricotta/Industry.png";
+  base: string = "Capricotta/TheHighSeas.png";
   height: number = 900;
   width: number = 600;
 
@@ -25,35 +41,17 @@ export class LayersTool extends React.Component<any, LayersToolState> {
     this.state = {
       stage: 0,
       loadedImages: 0,
-      layers: [ 
-        {
-          layerType: LayerType.Phrase,
-          isVisible: true,
-          backgroundColor: "#000",
-          horizontalPosition: 0.5,
-          verticalPosition: 0.5,
-          horizontalAlignment: 0.5,
-          verticalAlignment: 0.5,
-          fontFamily: FontFamily.Monospace,
-          fontSize: 10,
-          shownText: "Hello",
-          hiddenText: "Hello",
-          textColor: "#FFF",
-          rotation: 0,
-          deleted: false,
-          isOpen: true,
-          key: 0
-        }
-      ],
-      showOrigins: false
+      layers: [],
+      showOrigins: false,
+      textarea: "[]"
     };
   }
 
-  componentDidMount = () => {
-    this.updateImage();
-  }
-
   next = () => {
+    if (this.state.stage == 0) {
+      this.updateImage();
+    }
+
     this.setState((state) => ({
       stage: state.stage + 1
     }));
@@ -65,6 +63,15 @@ export class LayersTool extends React.Component<any, LayersToolState> {
     }));
   }
 
+  updateText = (value: string) => {
+    this.setState({
+      textarea: value,
+      errorMessage: undefined
+    });
+
+    this.updateLayersFromText(value);
+  }
+
   getBody = () => {
     return {
       base: this.base,
@@ -74,6 +81,76 @@ export class LayersTool extends React.Component<any, LayersToolState> {
       lotoColour: "#fff",
       lotoBackground: "#000",
       showOrigins: this.state.showOrigins
+    }
+  }
+
+  getFontFamily = (fontFamily: string) => {
+    switch (fontFamily) {
+      case FontFamily.SansSerif:
+        return FontFamily.SansSerif;
+      case FontFamily.Serif:
+        return FontFamily.Serif;
+      case FontFamily.Journal:
+        return FontFamily.Journal;
+      case FontFamily.Gandhi:
+        return FontFamily.Gandhi;
+      case FontFamily.Monospace:
+      default:
+        return FontFamily.Monospace;
+    }
+  }
+
+  updateLayersFromText = (layersJson: string) => {
+    try {
+      let fonts: string[] = ["Monospace", "Serif", "SansSerif", "Journal", "Gandhi"]
+
+      layersJson = layersJson.replace(/LayerType.Phrase/g, `"LayerType.Phrase"`);
+      layersJson = layersJson.replace(/FontFamily./g, ``);
+      fonts.map((font: string) => {
+        var regExp = new RegExp(font, "g");
+        layersJson = layersJson.replace(regExp, `"${font.toLowerCase()}"`);
+      });
+
+      const jasons: JsonLayer[] = JSON.parse(layersJson);
+      const layers: Layer[] = [];
+      let key = 0;
+
+      jasons.map((jason: JsonLayer) => {
+        let underscores = "";
+
+        for (let i = 0; i < jason.maximumLength; i++) {
+          underscores += "_";
+        }
+
+        layers.push({
+          layerType: LayerType.Phrase,
+          isVisible: true,
+          backgroundColor: jason.backgroundColor,
+          horizontalPosition: jason.horizontalPosition,
+          verticalPosition: jason.verticalPosition,
+          horizontalAlignment: jason.horizontalAlignment,
+          verticalAlignment: jason.verticalAlignment,
+          fontFamily: this.getFontFamily(jason.fontFamily),
+          fontSize: jason.fontSize,
+          shownText: underscores,
+          hiddenText: underscores,
+          textColor: jason.textColor,
+          rotation: jason.rotation,
+          deleted: false,
+          isOpen: false,
+          key: key
+        });
+
+        key++;
+      });
+
+      this.setState({
+        layers: layers
+      });
+    } catch (error) {
+      this.setState({
+        errorMessage: error.message
+      });
     }
   }
 
@@ -107,10 +184,27 @@ export class LayersTool extends React.Component<any, LayersToolState> {
   }
 
   render() {
-    let componentProps: LayersToolComponentProps | InfoComponentProps;
+    let componentProps: TextareaComponentProps | LayersToolComponentProps | InfoComponentProps;
 
     switch (this.state.stage) {
       case 0:
+        componentProps = {
+          contents: ["Whatever"],
+          textareaTitle: "Input Maybe",
+          value: this.state.textarea,
+          onChange: this.updateText,
+          navigationButtons: [
+            {
+              class: "navigation",
+              name: "Next",
+              onClick: this.next,
+              isActive: true
+            }
+          ],
+          errorMessage: this.state.errorMessage
+        }
+        break;
+      case 1:
         componentProps = {
           contents: ["Whatever"],
           infoTitle: "Thing",
@@ -122,9 +216,9 @@ export class LayersTool extends React.Component<any, LayersToolState> {
               isActive: this.state.previewURL !== undefined
             }
           ]
-        }
+        };
         break;
-      case 1:
+      case 2:
         componentProps = {
           layersToolTitle: "Page",
           layers: this.state.layers,

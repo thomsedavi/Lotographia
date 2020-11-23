@@ -12,6 +12,7 @@ import { PaperFollies } from "./paperFollies/PaperFollies";
 import { WordGameTest } from "./pictures/WordGameTest";
 import { LexicologerNew, LexicologerGame } from "./lexicologer/Lexicologer";
 import { Style } from "./components/Style";
+import { VivaCity } from "./vivaCity/VivaCity";
 
 import "./custom.css"
 
@@ -30,6 +31,7 @@ export default class App extends React.Component {
       <Route path="/lexicologer/:gameId" component={LexicologerGame} />
       <Route path="/lexicologer" component={LexicologerNew} />
       <Route path="/style" component={Style} />
+      <Route path="/viva-city" component={VivaCity} />
     </Switch>;
 
     return (

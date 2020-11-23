@@ -123,7 +123,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
   componentDidMount = () => {
     const searchParams = new URLSearchParams(window.location.search);
 
-    if (this.state.gamePage == GamePage.BearerFound) {
+    if (this.state.gamePage === GamePage.BearerFound) {
       fetch("api/paperFollies/participant", {
         method: "GET",
         headers: {
@@ -1458,11 +1458,11 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
   // TODO expand
   getNumberth = (index: number) => {
-    if (index == 1) {
+    if (index === 1) {
       return `${index}st`;
-    } else if (index == 2) {
+    } else if (index === 2) {
       return `${index}nd`;
-    } else if (index == 3) {
+    } else if (index === 3) {
       return `${index}rd`;
     } else if (index >= 4 && index <= 20) {
       return `${index}th`;
@@ -1666,7 +1666,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
             <br />
             <div className="note">A name for your splendid self!</div>
           </div>
-          {this.state.gameMode == GameMode.Admin &&
+          {this.state.gameMode === GameMode.Admin &&
             <div className="component">
               <input type="checkbox" id="adminIsPlayer" defaultChecked={this.state.participant.attributes.isPlayer} onChange={this.toggleIsPlayer} />
               <label htmlFor="adminIsPlayer">I also wish to play!</label>
@@ -1674,7 +1674,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
               <div className="note">Deselect to have a Game Admin role only</div>
             </div>
           }
-          {this.state.gameMode == GameMode.Admin &&
+          {this.state.gameMode === GameMode.Admin &&
             <div className="component">
               <input type="checkbox" id="playersHaveBiography" defaultChecked={this.state.game.attributes.participantsHaveBiographies} onChange={this.toggleParticipantsHaveBiography} />
               <label htmlFor="playersHaveBiography">Player Biographies</label>
@@ -1718,10 +1718,10 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
           </div>
           <div className="component buttons">
             <button className="navigation" disabled={this.state.fetchingData} onClick={() => this.changeGamePage(this.state.game.attributes.participantsHaveBiographies ? GamePage.PlayerBiography : GamePage.PlayerName)}>Back</button>
-            {this.state.gameMode == GameMode.Admin &&
+            {this.state.gameMode === GameMode.Admin &&
               <button className="navigation" disabled={!this.state.password.trim() || (this.state.password.trim() !== this.state.confirmPassword.trim())} onClick={() => this.changeGamePage(GamePage.CreateGame)}>Next</button>
             }
-            {this.state.gameMode == GameMode.Player &&
+            {this.state.gameMode === GameMode.Player &&
               <button className="action" disabled={this.state.password.trim() !== this.state.confirmPassword.trim() || this.state.fetchingData} onClick={this.joinGame}>Join Game</button>
             }
           </div>
@@ -2407,7 +2407,7 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
         {component}
         {this.state.isLoggedIn &&
           this.state.section === Section.Game &&
-          this.state.gamePage == GamePage.Entry &&
+          this.state.gamePage === GamePage.Entry &&
           this.state.game.state.isEnded &&
           <div className="component buttons">
             <button className="action" onClick={this.getFinalContents}>

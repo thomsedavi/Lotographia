@@ -6,6 +6,7 @@ import { SelectComponent, isSelectComponent } from "../components/SelectComponen
 import { CheckboxComponent, isCheckboxComponent } from "../components/CheckboxComponent";
 import { DisplayComponent, isDisplayComponent } from "../components/DisplayComponent";
 import { LayersToolComponent, isLayersToolComponent } from "../components/LayersToolComponent";
+import { TextareaComponent, isTextareaComponent } from "../components/TextareaComponent";
 
 export interface Button {
   class: string,
@@ -18,7 +19,8 @@ export interface ComponentProps {
   actionButtons?: Button[],
   navigationButtons: Button[],
   contents: string[],
-  loadingState?: JSX.Element
+  loadingState?: JSX.Element,
+  errorMessage?: string
 }
 
 interface ComponentContainerProps extends ComponentProps {
@@ -51,7 +53,7 @@ const ComponentContainer: React.StatelessComponent<ComponentContainerProps> = (p
 
       {props.children}
 
-      {actionButtons.length > 0 && <div className="component buttons">
+      {actionButtons.length > 0 && <div key="actions" className="component buttons">
         {actionButtons}
       </div>}
 
@@ -59,8 +61,12 @@ const ComponentContainer: React.StatelessComponent<ComponentContainerProps> = (p
         {props.loadingState}
       </div>}
 
-      {navigationButtons.length > 0 && <div className="component buttons">
+      {navigationButtons.length > 0 && <div key="navigations" className="component buttons">
         {navigationButtons}
+      </div>}
+
+      {props.errorMessage != undefined && <div key="errorMessage" className="component">
+        <div className="error-message">{props.errorMessage}</div>
       </div>}
     </div>
   );
@@ -85,6 +91,8 @@ export const getComponent = (componentProps: ComponentProps) => {
     return <TextComponent {...componentProps} />;
   else if (isLayersToolComponent(componentProps))
     return <LayersToolComponent {...componentProps} />;
+  else if (isTextareaComponent(componentProps))
+    return <TextareaComponent {...componentProps} />;
 
   return <InfoComponent
     navigationButtons={[]}

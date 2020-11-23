@@ -41,7 +41,7 @@ export const getProcessedTexts = (body: GetProcessedTextsBody, callback: (json: 
 }
 
 export const isValidColour = (colour: string | undefined) => {
-  if (colour == undefined)
+  if (colour === undefined)
     return false;
 
   if (colour.toLowerCase() === "none")

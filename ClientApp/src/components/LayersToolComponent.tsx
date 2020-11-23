@@ -77,27 +77,27 @@ const LayerComponent: React.StatelessComponent<LayerComponentProps> = (props) =>
 
         <div style={{ margin: "0.2em 0.5em", display: "inline-block" }}>
           <label htmlFor="horizontalPosition" style={{ marginRight: "0.5em" }}>Horizontal Position</label>
-          <input type="text" id="horizontalPosition" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.horizontalPosition == undefined || props.layer.horizontalPosition < 0 || props.layer.horizontalPosition > 1 ? "red" : "initial" }} defaultValue={props.layer.horizontalPosition} maxLength={5} ref={xPositionRef} onChange={() => props.setDirty(props.index)} />
+          <input type="text" id="horizontalPosition" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.horizontalPosition === undefined || props.layer.horizontalPosition < 0 || props.layer.horizontalPosition > 1 ? "red" : "initial" }} defaultValue={props.layer.horizontalPosition} maxLength={5} ref={xPositionRef} onChange={() => props.setDirty(props.index)} />
         </div>
 
         <div style={{ margin: "0.2em 0.5em", display: "inline-block" }}>
           <label htmlFor="verticalPosition" style={{ marginRight: "0.5em" }}>Vertical Position</label>
-          <input type="text" id="verticalPosition" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.verticalPosition == undefined || props.layer.verticalPosition < 0 || props.layer.verticalPosition > 1 ? "red" : "initial" }} defaultValue={props.layer.verticalPosition} maxLength={5} ref={yPositionRef} onChange={() => props.setDirty(props.index)} />
+          <input type="text" id="verticalPosition" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.verticalPosition === undefined || props.layer.verticalPosition < 0 || props.layer.verticalPosition > 1 ? "red" : "initial" }} defaultValue={props.layer.verticalPosition} maxLength={5} ref={yPositionRef} onChange={() => props.setDirty(props.index)} />
         </div>
 
         <div style={{ margin: "0.2em 0.5em", display: "inline-block" }}>
           <label htmlFor="horizontalAlignment" style={{ marginRight: "0.5em" }}>Horizontal Alignment</label>
-          <input type="text" id="horizontalAlignment" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.horizontalAlignment == undefined || props.layer.horizontalAlignment < 0 || props.layer.horizontalAlignment > 1 ? "red" : "initial" }} defaultValue={props.layer.horizontalAlignment} maxLength={5} ref={xAlignmentRef} onChange={() => props.setDirty(props.index)} />
+          <input type="text" id="horizontalAlignment" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.horizontalAlignment === undefined || props.layer.horizontalAlignment < 0 || props.layer.horizontalAlignment > 1 ? "red" : "initial" }} defaultValue={props.layer.horizontalAlignment} maxLength={5} ref={xAlignmentRef} onChange={() => props.setDirty(props.index)} />
         </div>
 
         <div style={{ margin: "0.2em 0.5em", display: "inline-block" }}>
           <label htmlFor="verticalAlignment" style={{ marginRight: "0.5em" }}>Vertical Alignment</label>
-          <input type="text" id="verticalAlignment" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.verticalAlignment == undefined || props.layer.verticalAlignment < 0 || props.layer.verticalAlignment > 1 ? "red" : "initial" }} defaultValue={props.layer.verticalAlignment} maxLength={5} ref={yAlignmentRef} onChange={() => props.setDirty(props.index)} />
+          <input type="text" id="verticalAlignment" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.verticalAlignment === undefined || props.layer.verticalAlignment < 0 || props.layer.verticalAlignment > 1 ? "red" : "initial" }} defaultValue={props.layer.verticalAlignment} maxLength={5} ref={yAlignmentRef} onChange={() => props.setDirty(props.index)} />
         </div>
 
         <div style={{ margin: "0.2em 0.5em", display: "inline-block" }}>
           <label htmlFor="rotation" style={{ marginRight: "0.5em" }}>Rotation</label>
-          <input type="text" id="rotation" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.rotation == undefined || props.layer.rotation < -360 || props.layer.rotation > 360 ? "red" : "initial" }} defaultValue={props.layer.rotation} maxLength={5} ref={rotationRef} onChange={() => props.setDirty(props.index)} />
+          <input type="text" id="rotation" style={{ fontFamily: "monospace", width: "3.2em", borderColor: props.layer.rotation === undefined || props.layer.rotation < -360 || props.layer.rotation > 360 ? "red" : "initial" }} defaultValue={props.layer.rotation} maxLength={5} ref={rotationRef} onChange={() => props.setDirty(props.index)} />
         </div>
 
         <div style={{ margin: "0.2em 0.5em", display: "inline-block" }}>
@@ -230,17 +230,17 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
   const isValid: boolean = props.layers.every((layer: Layer) => {
     if (layer.deleted)
       return true;
-    if (layer.horizontalPosition == undefined || layer.horizontalPosition < 0 || layer.horizontalPosition > 1)
+    if (layer.horizontalPosition === undefined || layer.horizontalPosition < 0 || layer.horizontalPosition > 1)
       return false;
-    if (layer.verticalPosition == undefined || layer.verticalPosition < 0 || layer.verticalPosition > 1)
+    if (layer.verticalPosition === undefined || layer.verticalPosition < 0 || layer.verticalPosition > 1)
       return false;
-    if (layer.horizontalAlignment == undefined || layer.horizontalAlignment < 0 || layer.horizontalAlignment > 1)
+    if (layer.horizontalAlignment === undefined || layer.horizontalAlignment < 0 || layer.horizontalAlignment > 1)
       return false;
-    if (layer.verticalAlignment == undefined || layer.verticalAlignment < 0 || layer.verticalAlignment > 1)
+    if (layer.verticalAlignment === undefined || layer.verticalAlignment < 0 || layer.verticalAlignment > 1)
       return false;
-    if (layer.rotation == undefined || layer.rotation < -360 || layer.rotation > 360)
+    if (layer.rotation === undefined || layer.rotation < -360 || layer.rotation > 360)
       return false;
-    if (layer.fontSize == undefined || layer.fontSize < 8 || layer.fontSize > 96)
+    if (layer.fontSize === undefined || layer.fontSize < 8 || layer.fontSize > 96)
       return false;
     if (layer.isDirty)
       return false;
@@ -356,18 +356,18 @@ const LayersToolComponent: React.StatelessComponent<LayersToolComponentProps> = 
 
       layers.push(<div key={`layer${index}`}>
         <div>{`\u00a0\u00a0{`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0layerType: LayerType.Phrase,`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0isVisible: false,`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0backgroundColor: "${layer.backgroundColor!.toLowerCase()}",`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0textColor: "${layer.textColor!.toLowerCase()}",`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0horizontalPosition: ${layer.horizontalPosition},`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0verticalPosition: ${layer.verticalPosition},`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0horizontalAlignment: ${layer.horizontalAlignment},`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0verticalAlignment: ${layer.verticalAlignment},`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0fontSize: ${layer.fontSize},`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0fontFamily: ${fontFamily},`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0maximumLength: ${layer.shownText!.length},`}</div>
-        <div>{`\u00a0\u00a0\u00a0\u00a0rotation: ${layer.rotation},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"layerType": LayerType.Phrase,`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"isVisible": false,`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"backgroundColor": "${layer.backgroundColor!.toLowerCase()}",`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"textColor": "${layer.textColor!.toLowerCase()}",`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"horizontalPosition": ${layer.horizontalPosition},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"verticalPosition": ${layer.verticalPosition},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"horizontalAlignment": ${layer.horizontalAlignment},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"verticalAlignment": ${layer.verticalAlignment},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"fontSize": ${layer.fontSize},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"fontFamily": ${fontFamily},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"maximumLength": ${layer.shownText!.length},`}</div>
+        <div>{`\u00a0\u00a0\u00a0\u00a0"rotation": ${layer.rotation}`}</div>
         <div>{`\u00a0\u00a0}${index < props.layers.length - 1 ? "," : ""}`}</div>
       </div>);
     }

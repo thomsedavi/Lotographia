@@ -240,6 +240,8 @@ _Pvt_Extensions
 /ClientApp/src/common/*.js.map
 /ClientApp/src/components/*.js
 /ClientApp/src/components/*.js.map
+/ClientApp/src/lexicologer/*.js
+/ClientApp/src/lexicologer/*.js.map
 /ClientApp/src/mistletoe/*.js
 /ClientApp/src/mistletoe/*.js.map
 /ClientApp/src/pictures/*.js
@@ -248,3 +250,5 @@ _Pvt_Extensions
 /ClientApp/src/paperFollies/*.js.map
 /ClientApp/src/pictures/capricottaGames/*.js
 /ClientApp/src/pictures/capricottaGames/*.js.map
+/ClientApp/src/vivaCity/*.js
+/ClientApp/src/vivaCity/*.js.map
