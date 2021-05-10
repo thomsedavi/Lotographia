@@ -80,10 +80,21 @@ namespace Lotographia.Data
             lexicologerGame.Property(g => g.Words)
                 .HasConversion(w => JsonConvert.SerializeObject(w), w => JsonConvert.DeserializeObject<List<LexicologerWord>>(w))
                 .Metadata.SetValueComparer(valueComparer);
+
+            var tovelundGame = modelBuilder.Entity<TovelundGame>();
+
+            tovelundGame.Property(b => b.Title)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            tovelundGame.Property(b => b.Design)
+                .IsRequired()
+                .HasMaxLength(4000);
         }
 
         public DbSet<PaperFolliesGame> PaperFolliesGames { get; set; }
         public DbSet<PaperFolliesParticipant> PaperFolliesParticipants { get; set; }
         public DbSet<LexicologerGame> LexicologerGames { get; set; }
+        public DbSet<TovelundGame> TovelundGames { get; set; }
     }
 }
