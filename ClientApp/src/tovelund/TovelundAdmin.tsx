@@ -1,30 +1,41 @@
 ﻿import * as React from "react";
-import { TovelundClue, TovelundDestination, TovelundDestinationName, TovelundElementId, TovelundElementType, TovelundFeatureSize, TovelundGame, TovelundGameDetails, TovelundIndexType, TovelundSymbol, TovelundPoint, TovelundRangeRule, TovelundRelationshipRule, TovelundRoute, TovelundRouteName, TovelundZone, TovelundZoneFeature, TovelundZoneName, TovelundColor, ITovelundRule, TovelundElementName } from "./TovelundEnums";
+import { TovelundEntity, TovelundGame, TovelundFeatureType, TovelundColor, TovelundElementType, TovelundSequenceRule, TovelundFeatureCollection, TovelundEntityGroup, TovelundRelationshipRule, TovelundQuantityRule, TovelundDistanceRule } from "./TovelundEnums";
+import { TovelundGameClass } from "./TovelundGameClass";
 import { getTovelundMap } from "./TovelundMap";
+import { convertClueDescription } from "./TovelundUtils";
 
 interface ErrorData {
   title: string
 }
 
 interface TovelundAdminState {
+  mode: string,
   selectedGameId: number,
-  games: TovelundGameDetails[],
-  tempRelationship: TovelundElementId[],
+  games: { id: number, title: string }[],
   gameId?: number,
   gameTitle: string,
-  game: TovelundGame,
-  elementType: string,
+  game: TovelundGameClass,
   elementSymbol: string,
   elementName: string,
-  selectedElementType: string,
-  selectedElementId: number,
-  selectedIndexType: string,
-  selectedIndex: number,
+  selectedEntityId?: string,
+  selectedElementType?: string,
+  selectedElementId?: string,
+  selectedFeatureCollectionId?: string,
+  selectedEntityGroupId?: string,
+  selectedEntityGroupTypeId?: string,
   fetchingData: boolean,
   errorMessage: string,
-  selectedClueIndex: number,
+  selectedClueId?: string,
   selectedRuleType: string,
-  selectedRuleIndex: number
+  selectedRuleId?: string,
+  selectedAvailableFeatureType?: string,
+  selectedAvailableFeatureName?: string,
+  selectedAvailableFeatureSymbol?: string,
+  selectedFeatureId?: string,
+  highlightMode: string,
+  solutionCount: number,
+  quantitiesString: string,
+  selectedSequenceIndex?: number
 }
 
 export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
@@ -32,31 +43,19 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     super(props);
 
     this.state = {
+      mode: "LAYERS",
       selectedGameId: -1,
       games: [],
       gameTitle: "Duck Island",
-      game: {
-        scale: 100,
-        symbols: [],
-        destinations: [],
-        routes: [],
-        zones: [],
-        relationships: [],
-        clues: []
-      },
-      elementType: TovelundElementType.None,
+      game: new TovelundGameClass(),
       elementSymbol: "",
       elementName: "NONE",
-      selectedElementType: TovelundElementType.None,
-      selectedElementId: -1,
-      selectedIndexType: TovelundIndexType.None,
-      selectedIndex: -1,
-      tempRelationship: [],
       fetchingData: false,
       errorMessage: "",
-      selectedClueIndex: -1,
-      selectedRuleType: "RANGE",
-      selectedRuleIndex: -1
+      selectedRuleType: "RELATIONSHIP",
+      highlightMode: "ELEMENT",
+      solutionCount: -1,
+      quantitiesString: ""
     }
   }
 
@@ -70,13 +69,31 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       .then((response: Response) => {
         if (response.status === 200) {
           response.json()
-            .then((data: { games: TovelundGameDetails[] }) => {
+            .then((data: { games: { id: number, title: string }[] }) => {
               this.setState({
                 games: data.games
               });
             })
         }
       });
+  }
+
+  selectMode = (mode: string) => {
+    this.setState({
+      mode: mode
+    });
+  }
+
+  changeTitle = (title: string) => {
+    this.setState({
+      gameTitle: title
+    });
+  }
+
+  selectGame = (gameId: string) => {
+    this.setState({
+      selectedGameId: Number(gameId)
+    });
   }
 
   loadGame = () => {
@@ -89,236 +106,339 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       .then((response: Response) => {
         if (response.status === 200) {
           response.json()
-            .then((data: TovelundGame) => {
+            .then((game: TovelundGame) => {
               this.setState({
-                selectedElementType: TovelundElementType.None,
-                selectedClueIndex: -1,
                 gameTitle: this.state.games.filter(g => g.id === this.state.selectedGameId)[0].title,
-                game: {
-                  scale: data.scale ? data.scale : 100,
-                  routes: data.routes ? data.routes : [],
-                  destinations: data.destinations ? data.destinations : [],
-                  symbols: data.symbols ? data.symbols : [],
-                  zones: data.zones ? data.zones : [],
-                  relationships: data.relationships ? data.relationships : [],
-                  clues: data.clues ? data.clues : []
-                },
-                gameId: this.state.selectedGameId
+                game: new TovelundGameClass(game),
+                gameId: this.state.selectedGameId,
+                selectedEntityId: undefined,
+                selectedElementType: undefined,
+                selectedElementId: undefined,
+                selectedEntityGroupId: undefined,
+                selectedFeatureCollectionId: undefined,
+                selectedClueId: undefined,
+                selectedRuleId: undefined
               });
             })
         }
       });
   }
 
-  addSymbol = () => {
-    const game = this.state.game;
+  addEntity = () => {
+    if (this.state.selectedFeatureCollectionId) {
+      const game = this.state.game;
 
-    game.symbols.push({ type: TovelundElementType.Destination, name: this.state.elementName, symbol: this.state.elementSymbol });
-    game.symbols.sort((a: TovelundSymbol, b: TovelundSymbol) => a.symbol < b.symbol ? -1 : 1);
+      const entityId = game.addEntity(this.state.selectedFeatureCollectionId);
 
+      this.setState({
+        game: game,
+        selectedEntityId: entityId,
+        selectedElementType: undefined,
+        selectedElementId: undefined
+      });
+    }
+  }
+
+  selectEntity = (entityId: string) => {
     this.setState({
-      elementType: TovelundElementType.None,
-      elementSymbol: "",
-      elementName: "NONE",
-      game: game
+      selectedEntityId: entityId,
+      selectedElementType: undefined,
+      selectedElementId: undefined
     });
   }
 
-  addDestination = () => {
-    const game = this.state.game;
+  setEntityFeatureCollection = (featureCollectionId: string) => {
+    if (this.state.selectedEntityId) {
+      const game = this.state.game;
 
-    const id = game.destinations.length + 1;
+      game.setEntityFeatureCollectionId(this.state.selectedEntityId, featureCollectionId);
 
-    game.destinations.push({
-      id: id,
-      point: { x: 0, y: 0 },
-      angle: "HORIZONTAL",
-      symbolColors: {}
-    });
-
-    this.setState({
-      selectedElementType: TovelundElementType.Destination,
-      selectedElementId: id,
-      selectedIndexType: TovelundIndexType.None,
-      selectedIndex: -1,
-      game: game
-    });
+      this.setState({
+        game: game
+      });
+    }
   }
 
-  selectDestination = (id: number) => {
-    this.setState({
-      selectedElementType: TovelundElementType.Destination,
-      selectedElementId: id,
-      selectedIndexType: TovelundIndexType.None,
-      selectedIndex: -1
-    });
+
+  selectEntityFeatureId = (featureId: string) => {
+    if (this.state.selectedEntityId) {
+      const game = this.state.game;
+
+      game.setEntityFixedFeatureId(this.state.selectedEntityId, featureId === "NONE" ? undefined : featureId);
+
+      this.setState({
+        game: game
+      });
+    }
   }
 
-  addRoute = () => {
-    const game = this.state.game;
+  addRectangle = () => {
+    if (this.state.selectedEntityId) {
+      const game = this.state.game;
 
-    const id = game.routes.length + 1;
+      const rectangleId = game.addRectangle(this.state.selectedEntityId);
 
-    game.routes.push({
-      id: id,
-      name: TovelundRouteName.None,
-      points: [
-        { x: -10, y: -10 },
-        { x: 10, y: 10 }
-      ]
-    });
-
-    this.setState({
-      selectedElementType: TovelundElementType.Route,
-      selectedElementId: id,
-      selectedIndexType: TovelundIndexType.Point,
-      selectedIndex: 0,
-      game: game
-    });
-  }
-
-  addZone = (isBase: boolean) => {
-    const game = this.state.game;
-
-    const id = isBase ? 0 : game.zones.filter(z => z.id !== 0).length + 1;
-
-    game.zones.push({
-      id: id,
-      name: TovelundZoneName.None,
-      points: isBase ? undefined : [
-        { x: -10, y: -10 },
-        { x: 10, y: -10 },
-        { x: 10, y: 10 }
-      ],
-      features: []
-    });
-
-    this.setState({
-      selectedElementType: TovelundElementType.Zone,
-      selectedElementId: id,
-      selectedIndexType: TovelundIndexType.Point,
-      selectedIndex: 0,
-      game: game
-    });
+      this.setState({
+        game: game,
+        selectedElementType: TovelundElementType.Rectangle,
+        selectedElementId: rectangleId
+      });
+    }
   }
 
   addPoint = () => {
+    if (this.state.selectedEntityId) {
+      const game = this.state.game;
+
+      const pointId = game.addPoint(this.state.selectedEntityId);
+
+      this.setState({
+        game: game,
+        selectedElementType: TovelundElementType.Point,
+        selectedElementId: pointId
+      });
+    }
+  }
+
+  addLine = () => {
+    if (this.state.selectedEntityId) {
+      const game = this.state.game;
+
+      const lineId = game.addLine(this.state.selectedEntityId);
+
+      this.setState({
+        game: game,
+        selectedElementType: TovelundElementType.Line,
+        selectedElementId: lineId
+      });
+    }
+  }
+
+  addVertex = () => {
+    if (this.state.selectedElementId) {
+      const game = this.state.game;
+
+      const vertexId = game.addVertex(this.state.selectedElementId);
+
+      this.setState({
+        game: game,
+        selectedElementType: TovelundElementType.Vertex,
+        selectedElementId: vertexId
+      });
+    }
+  }
+
+  addEntityGroupType = () => {
     const game = this.state.game;
 
-    let index: number = 0;
-
-    if (this.state.selectedElementType === TovelundElementType.Route) {
-      index = game.routes.filter(r => r.id === this.state.selectedElementId)[0].points.length;
-      game.routes.filter(r => r.id === this.state.selectedElementId)[0].points.push({ x: 0, y: 0 });
-    } else if (this.state.selectedElementType === TovelundElementType.Zone) {
-      const points = game.zones.filter(z => z.id === this.state.selectedElementId)[0].points;
-
-      if (points) {
-        index = points.length;
-        // TODO will this work?
-        points.push({ x: 0, y: 0 });
-      }
-    }
+    const entityGroupTypeId = game.addEntityGroupType();
 
     this.setState({
       game: game,
-      selectedIndexType: TovelundIndexType.Point,
-      selectedIndex: index
+      selectedEntityGroupTypeId: entityGroupTypeId
+    });
+  }
+
+  addEntityGroup = () => {
+    if (this.state.selectedEntityGroupTypeId !== undefined) {
+      const game = this.state.game;
+
+      const entityGroupId = game.addEntityGroup(this.state.selectedEntityGroupTypeId);
+
+      this.setState({
+        game: game,
+        selectedEntityGroupId: entityGroupId
+      });
+    }
+  }
+
+  deleteEntityGroup = () => {
+    if (this.state.selectedEntityGroupId !== undefined) {
+      const game = this.state.game;
+
+      game.deleteEntityGroup(this.state.selectedEntityGroupId);
+
+      this.setState({
+        game: game,
+        selectedEntityGroupId: undefined
+      });
+    }
+  }
+
+  addEntityToGroup = () => {
+    if (this.state.selectedEntityGroupId) {
+      if (this.state.selectedEntityId) {
+        const game = this.state.game;
+
+        game.addEntityToGroup(this.state.selectedEntityGroupId, this.state.selectedEntityId);
+
+        this.setState({
+          game: game
+        });
+      }
+    }
+  }
+
+  addFeatureCollection = () => {
+    const game = this.state.game;
+
+    const featureCollectionId = game.addFeatureCollection();
+
+    this.setState({
+      game: game,
+      selectedFeatureCollectionId: featureCollectionId
     });
   }
 
   addFeature = () => {
     const game = this.state.game;
 
-    if (this.state.selectedElementType === TovelundElementType.Zone) {
-      game.zones.filter(r => r.id === this.state.selectedElementId)[0].features.push({ shape: TovelundFeatureSize.Medium, point: { x: 0, y: 0 } });
+    if (this.state.selectedFeatureCollectionId) {
+      if (this.state.selectedAvailableFeatureType) {
+        if (this.state.selectedAvailableFeatureSymbol) {
+          if (this.state.selectedAvailableFeatureName) {
+            game.addFeature(this.state.selectedFeatureCollectionId, this.state.selectedAvailableFeatureType, this.state.selectedAvailableFeatureName, this.state.selectedAvailableFeatureSymbol);
+          }
+        }
+      }
+    }
+
+    this.setState({
+      game: game,
+      selectedAvailableFeatureType: undefined,
+      selectedAvailableFeatureName: undefined,
+      selectedAvailableFeatureSymbol: undefined
+    });
+  }
+
+  delete = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedElementId !== undefined) {
+      if (this.state.selectedElementType === TovelundElementType.Point) {
+        game.deletePoint(this.state.selectedElementId);
+      }
 
       this.setState({
         game: game,
-        selectedIndexType: TovelundIndexType.Feature,
-        selectedIndex: game.zones.filter(z => z.id === this.state.selectedElementId)[0].features.length - 1
+        selectedElementId: undefined,
+        selectedElementType: undefined
+      });
+
+    } else if (this.state.selectedEntityId !== undefined) {
+      console.log('here');
+
+      game.deleteEntity(this.state.selectedEntityId);
+
+      this.setState({
+        game: game,
+        selectedEntityId: undefined
       });
     }
   }
 
-  addClue = () => {
-    const game = this.state.game;
-
-    game.clues.push({
-      description: "",
-      rules: []
-    });
-
+  selectFeatureCollection = (featureCollectionId: string) => {
     this.setState({
-      game: game
+      selectedFeatureCollectionId: featureCollectionId,
+      selectedFeatureId: undefined
     });
   }
 
-  addElementToRelation = () => {
-    const tempRelationship = this.state.tempRelationship;
-
-    tempRelationship.push({
-      type: this.state.selectedElementType,
-      id: this.state.selectedElementId
-    });
-
+  selectFeatureId = (featureId: string) => {
     this.setState({
-      tempRelationship: tempRelationship
+      selectedFeatureId: featureId
     });
   }
 
-  createRelationship = () => {
-    const game = this.state.game;
-
-    game.relationships.push(this.state.tempRelationship);
-
+  selectHighlightMode = (highlightMode: string) => {
     this.setState({
-      game: game,
-      tempRelationship: []
+      highlightMode: highlightMode
     });
+  }
+
+  selectFeatureCollectionColor = (color: string) => {
+    if (this.state.selectedFeatureCollectionId) {
+      const game = this.state.game;
+
+      game.setFeatureCollectionColor(this.state.selectedFeatureCollectionId, color);
+
+      this.setState({
+        game: game
+      });
+    }
+  }
+
+  changeAvailableFeatureName = (availableFeatureName: string) => {
+    this.setState({
+      selectedAvailableFeatureName: availableFeatureName
+    });
+  }
+
+  selectAvailableFeatureType = (availableFeatureType: string) => {
+    this.setState({
+      selectedAvailableFeatureType: availableFeatureType
+    });
+  }
+
+  selectAvailableFeatureName = (availableFeatureName: string) => {
+    this.setState({
+      selectedAvailableFeatureName: availableFeatureName
+    });
+  }
+
+  selectAvailableFeatureSymbol = (availableFeatureSymbol: string) => {
+    this.setState({
+      selectedAvailableFeatureSymbol: availableFeatureSymbol
+    });
+  }
+
+  changeFeatureCollectionName = (name: string) => {
+    if (this.state.selectedFeatureCollectionId) {
+      const game = this.state.game;
+
+      game.changeFeatureCollectionName(this.state.selectedFeatureCollectionId, name);
+
+      this.setState({
+        game: game
+      });
+    }
   }
 
   selectElement = (value: string) => {
-    const split = value.split("_");
+    const values = value.split("_");
 
     this.setState({
-      elementType: split[0],
-      elementName: split[1]
+      selectedElementType: values[0],
+      selectedElementId: values[1]
     });
   }
 
-  selectGame = (gameId: string) => {
+  selectEntityGroupType = (entityGroupTypeId: string) => {
     this.setState({
-      selectedGameId: Number(gameId)
+      selectedEntityGroupTypeId: entityGroupTypeId
     });
   }
 
-  selectSelectedElement = (value: string) => {
-    const split = value.split("_");
-
+  selectEntityGroup = (entityGroupId: string) => {
     this.setState({
-      selectedElementType: split[0],
-      selectedElementId: Number(split[1]),
-      selectedIndex: split[0] === TovelundElementType.Route || split[0] === TovelundElementType.Zone ? 0 : -1
+      selectedEntityGroupId: entityGroupId
     });
   }
 
-  selectObjectIndex = (index: string) => {
-    var indexComponents = index.split("_");
-
-    this.setState({
-      selectedIndexType: indexComponents[0],
-      selectedIndex: Number(indexComponents[1])
-    });
-  }
-
-  selectShape = (shape: string) => {
+  selectElementShape = (shape: string) => {
     const game = this.state.game;
 
-    if (this.state.selectedElementType === TovelundElementType.Destination) {
-      game.destinations.filter(d => d.id === this.state.selectedElementId)[0].angle = shape === "HORIZONTAL" ? "HORIZONTAL" : "VERTICAL";
-    } else if (this.state.selectedElementType === TovelundElementType.Zone && this.state.selectedIndexType === TovelundIndexType.Feature) {
-      game.zones.filter(z => z.id === this.state.selectedElementId)[0].features[this.state.selectedIndex].shape = shape;
+    if (this.state.selectedElementId) {
+      if (this.state.selectedElementType === TovelundElementType.Rectangle) {
+        game.setRectangleAttribute(this.state.selectedElementId, "Orientation", shape);
+      } else if (this.state.selectedElementType === TovelundElementType.Point) {
+        game.setPointAttribute(this.state.selectedElementId, "Size", shape);
+      } else if (this.state.selectedElementType === TovelundElementType.Line) {
+        const shapes = shape.split("_");
+
+        game.setLineAttribute(this.state.selectedElementId, "IsClosed", shapes[0] === "CLOSED");
+        game.setLineAttribute(this.state.selectedElementId, "IsBorder", shapes[1] === "BORDER");
+      }
     }
 
     this.setState({
@@ -326,99 +446,44 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     });
   }
 
-  selectFixedElementName = (elementName: string) => {
+  changeEntityName = (name: string) => {
     const game = this.state.game;
 
-    if (this.state.selectedElementType === TovelundElementType.Destination) {
-      game.destinations.filter(d => d.id === this.state.selectedElementId)[0].fixedName = elementName === TovelundElementType.None ? undefined : elementName;
-    } else if (this.state.selectedElementType === TovelundElementType.Route) {
-      game.routes.filter(r => r.id === this.state.selectedElementId)[0].name = elementName;
-    } else if (this.state.selectedElementType === TovelundElementType.Zone) {
-      game.zones.filter(z => z.id === this.state.selectedElementId)[0].name = elementName;
+    if (this.state.selectedEntityId) {
+      game.changeEntityName(this.state.selectedEntityId, name);
     }
 
     this.setState({
       game: game
-    });
-  }
-
-  changeElementSymbol = (symbol: string) => {
-    this.setState({
-      elementSymbol: symbol
     });
   }
 
   changeX = (x: string) => {
-    const game = this.state.game;
-
-    if (this.state.selectedElementType === TovelundElementType.Destination) {
-      game.destinations.filter(d => d.id === this.state.selectedElementId)[0].point.x = Number(x);
-    } else if (this.state.selectedElementType === TovelundElementType.Route) {
-      game.routes.filter(r => r.id === this.state.selectedElementId)[0].points[this.state.selectedIndex].x = Number(x);
-    } else if (this.state.selectedElementType === TovelundElementType.Zone) {
-      if (this.state.selectedIndexType === TovelundIndexType.Point) {
-        const points = game.zones.filter(r => r.id === this.state.selectedElementId)[0].points;
-
-        if (points) {
-          points[this.state.selectedIndex].x = Number(x);
-        }
-      } else if (this.state.selectedIndexType === TovelundIndexType.Feature) {
-        game.zones.filter(z => z.id === this.state.selectedElementId)[0].features[this.state.selectedIndex].point.x = Number(x);
+    if (this.state.selectedElementType !== undefined) {
+      if (this.state.selectedElementId !== undefined) {
+        const game = this.state.game;
+      
+        game.changeX(this.state.selectedElementType, this.state.selectedElementId, Number(x));
+      
+        this.setState({
+          game: game
+        });
       }
     }
-
-    this.setState({
-      game: game
-    });
   }
 
   changeY = (y: string) => {
-    const game = this.state.game;
-
-    if (this.state.selectedElementType === TovelundElementType.Destination) {
-      game.destinations.filter(d => d.id === this.state.selectedElementId)[0].point.y = Number(y);
-    } else if (this.state.selectedElementType === TovelundElementType.Route) {
-      game.routes.filter(r => r.id === this.state.selectedElementId)[0].points[this.state.selectedIndex].y = Number(y);
-    } else if (this.state.selectedElementType === TovelundElementType.Zone) {
-      if (this.state.selectedIndexType === TovelundIndexType.Point) {
-        const points = game.zones.filter(r => r.id === this.state.selectedElementId)[0].points;
-
-        if (points) {
-          points[this.state.selectedIndex].y = Number(y);
-        }
-      } else if (this.state.selectedIndexType === TovelundIndexType.Feature) {
-        game.zones.filter(z => z.id === this.state.selectedElementId)[0].features[this.state.selectedIndex].point.y = Number(y);
+    if (this.state.selectedElementType !== undefined) {
+      if (this.state.selectedElementId !== undefined) {
+        const game = this.state.game;
+      
+        game.changeY(this.state.selectedElementType, this.state.selectedElementId, Number(y));
+      
+        this.setState({
+          game: game
+        });
       }
     }
-
-    this.setState({
-      game: game
-    });
-  }
-
-  changeTitle = (title: string) => {
-    this.setState({
-      gameTitle: title
-    });
-  }
-
-  changeScale = (scale: string) => {
-    const game = this.state.game;
-
-    if (Number(scale) <= 150 && Number(scale) >= 50) {
-      game.scale = Number(scale);
-    }
-
-    this.setState({
-      game: game
-    });
-  }
-
-  selectClueIndex = (index: string) => {
-    this.setState({
-      selectedClueIndex: Number(index),
-      selectedRuleIndex: -1
-    });
   }
 
   selectRuleType = (ruleType: string) => {
@@ -427,55 +492,82 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     });
   }
 
-  selectRuleIndex = (index: string) => {
+  addClue = () => {
+    const game = this.state.game;
+
+    const clueId = game.addClue();
+
     this.setState({
-      selectedRuleIndex: Number(index)
+      game: game,
+      selectedClueId: clueId
+    });
+  }
+
+  deleteClue = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedClueId !== undefined) {
+      game.deleteClue(this.state.selectedClueId);
+    }
+
+    this.setState({
+      game: game,
+      selectedClueId: undefined
     });
   }
 
   addRule = () => {
+    if (this.state.selectedClueId) {
+      const game = this.state.game;
+
+      let ruleId: string | undefined;
+
+      if (this.state.selectedRuleType === "RELATIONSHIP") {
+        ruleId = game.addRelationshipRule(this.state.selectedClueId);
+      } else if (this.state.selectedRuleType === "QUANTITY") {
+        ruleId = game.addQuantityRule(this.state.selectedClueId);
+      } else if (this.state.selectedRuleType === "DISTANCE") {
+        ruleId = game.addDistanceRule(this.state.selectedClueId);
+      } else if (this.state.selectedRuleType === "SEQUENCE") {
+        ruleId = game.addSequenceRule(this.state.selectedClueId);
+      }
+
+      if (ruleId !== undefined) {
+        this.setState({
+          game: game,
+          selectedRuleId: ruleId
+        });
+      } else {
+        alert("failure");
+      }
+    }
+  }
+
+  deleteRule = () => {
     const game = this.state.game;
-    const clue = this.state.game.clues[this.state.selectedClueIndex];
 
-    if (this.state.selectedRuleType === "RANGE") {
-      const rule: TovelundRangeRule = {
-        ruleType: "RANGE",
-        element: {
-          type: TovelundElementType.Destination,
-          name: "HOUSE"
-        },
-        min: 1,
-        max: 1
-      }
-
-      clue.rules.push(rule);
-    } else if (this.state.selectedRuleType === "RELATIONSHIP") {
-      const rule: TovelundRelationshipRule = {
-        ruleType: "RELATIONSHIP",
-        mode: "INCLUDE",
-        element: {
-          type: TovelundElementType.Destination,
-          name: "HOUSE"
-        },
-        relationshipElements: [{
-          type: TovelundElementType.Zone,
-          name: "MOUNTAINS"
-        }]
-      }
-
-      clue.rules.push(rule);
+    if (this.state.selectedRuleId !== undefined) {
+      game.deleteRule(this.state.selectedRuleId);
     }
 
     this.setState({
-      game: game
+      game: game,
+      selectedRuleId: undefined
+    });
+  }
+
+  selectClueId = (clueId: string) => {
+    this.setState({
+      selectedClueId: clueId,
+      selectedRuleId: undefined
     });
   }
 
   changeClueDescription = (description: string) => {
     const game = this.state.game;
 
-    if (this.state.selectedClueIndex !== -1) {
-      game.clues[this.state.selectedClueIndex].description = description;
+    if (this.state.selectedClueId !== undefined) {
+      game.changeClueDescription(this.state.selectedClueId, description);
     }
 
     this.setState({
@@ -483,55 +575,285 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     });
   }
 
-  createGame = () => {
-    if (!this.state.fetchingData) {
+  moveClueUp = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedClueId !== undefined) {
+      game.moveClueUp(this.state.selectedClueId);
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  moveEntityUp = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedEntityId !== undefined) {
+      game.moveEntityUp(this.state.selectedEntityId);
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  selectRuleId = (ruleId: string) => {
+    const rule = this.state.game.getRule(ruleId);
+
+    if (rule.type === "QUANTITY") {
+      const quantityRule = rule as TovelundQuantityRule;
+
       this.setState({
-        fetchingData: true,
-        errorMessage: ""
+        selectedRuleId: ruleId,
+        quantitiesString: quantityRule.quantities.join(",")
       });
-
-      const body = {
-        title: "This Game 2",
-        design: "{}"
-      };
-
-      fetch("api/tovelund", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
-      })
-        .then((response: Response) => {
-          this.setState({
-            fetchingData: false
-          });
-
-          if (response.status === 200) {
-            response.json()
-              .then((data) => {
-                console.log(data);
-              })
-          } else {
-            response.json()
-              .then((data: ErrorData) => {
-                this.setState({
-                  errorMessage: data.title
-                });
-              })
-          }
-        });
+    } else {
+      this.setState({
+        selectedRuleId: ruleId,
+        selectedSequenceIndex: 0
+      });
     }
   }
 
+  selectRelationshipRuleMode = (mode: string) => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      game.setRelationshipRuleMode(this.state.selectedRuleId, mode);
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  selectRelationshipRuleLogic = (logic: string) => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      game.setRelationshipRuleLogic(this.state.selectedRuleId, logic);
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  addFeatureStartToRelationshipRule = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedFeatureId !== undefined) {
+        game.addFeatureStartToRelationshipRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+      }
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  addFeatureEndToRelationshipRule = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedFeatureId !== undefined) {
+        game.addFeatureEndToRelationshipRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+      }
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  addFeatureToQuantityRule = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedFeatureId !== undefined) {
+        game.addFeatureToQuantityRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+      }
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  changeQuantitiesOfQuantityRule = (quantitiesString: string) => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      const quantitiesSplit = quantitiesString.split(",");
+      const quantities: number[] = [];
+
+      quantitiesSplit.map((quantityString: string) => {
+        const quantity = Number(quantityString);
+
+        if (!isNaN(quantity) && quantity >= 0 && quantities.indexOf(quantity) === -1) {
+          quantities.push(quantity);
+        }
+      });
+
+      game.changeQuantitiesOfQuantityRule(this.state.selectedRuleId, quantities.sort());
+    }
+
+    this.setState({
+      game: game,
+      quantitiesString: quantitiesString
+    });
+  }
+
+  selectDistanceRuleMode = (mode: string) => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      game.setDistanceRuleMode(this.state.selectedRuleId, mode);
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  addFeatureStartToDistanceRule = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedFeatureId !== undefined) {
+        game.addFeatureStartToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+      }
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  addFeatureMiddleToDistanceRule = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedFeatureId !== undefined) {
+        game.addFeatureMiddleToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+      }
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  addFeatureEndToDistanceRule = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedFeatureId !== undefined) {
+        game.addFeatureEndToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+      }
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  selectSequenceRuleMode = (mode: string) => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      game.setSequenceRuleMode(this.state.selectedRuleId, mode);
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  selectSequenceCanRevisit = (canRevisit: string) => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      game.setSequenceCanRevisit(this.state.selectedRuleId, canRevisit === "CANREVISIT");
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  addIndexToSequenceRule = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      game.addIndexToSequenceRule(this.state.selectedRuleId);
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  selectSequenceIndex = (sequenceIndex: string) => {
+    const index = sequenceIndex.split("_");
+
+    this.setState({
+      selectedSequenceIndex: Number(index[1])
+    });
+  }
+
+  addFeatureToSequenceAtIndex = () => {
+    const game = this.state.game;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedFeatureId !== undefined) {
+        if (this.state.selectedSequenceIndex !== undefined) {
+          game.addFeatureToSequenceAtIndex(this.state.selectedRuleId, this.state.selectedSequenceIndex, this.state.selectedFeatureId);
+        }
+      }
+    }
+
+    this.setState({
+      game: game
+    });
+  }
+
+  changeScale = (scale: string) => {
+    const game = this.state.game;
+
+    game.setScale(Number(scale));
+
+    this.setState({
+      game: game
+    });
+  }
+
+  countSolutions = () => {
+    const game = this.state.game;
+
+    const solutionCount = game.countSolutions();
+
+    this.setState({
+      solutionCount: solutionCount,
+      game: game
+    });
+  }
+
   saveGame = () => {
+    const game: TovelundGameClass = { ...this.state.game };
+
+    game.clearMarkings();
+
     if (this.state.gameId) {
       fetch(`api/tovelund/${this.state.gameId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ "Title": this.state.gameTitle, "Design": JSON.stringify(this.state.game) })
+        body: JSON.stringify({ "Title": this.state.gameTitle, "Design": game.getJSON() })
       })
         .then(response => { console.log(response) });
     } else {
@@ -540,315 +862,546 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ "Title": this.state.gameTitle, "Design": JSON.stringify(this.state.game) })
+        body: JSON.stringify({ "Title": this.state.gameTitle, "Design": game.getJSON() })
       })
         .then(response => { console.log(response) });
     }
   }
 
-  changeRangeName = (name: string) => {
-    const game = this.state.game;
-    const rangeRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRangeRule;
-
-    rangeRule.element.name = name;
-
-    this.setState({
-      game: game
-    });
-  }
-
-  changeRangeMin = (min: string) => {
-    const game = this.state.game;
-    const rangeRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRangeRule;
-
-    rangeRule.min = Number(min);
-
-    this.setState({
-      game: game
-    });
-  }
-
-  changeRangeMax = (max: string) => {
-    const game = this.state.game;
-    const rangeRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRangeRule;
-
-    rangeRule.max = Number(max);
-
-    this.setState({
-      game: game
-    });
-  }
-
-  changeElementType = (type: string) => {
-    const game = this.state.game;
-    const requirementRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRelationshipRule;
-
-    requirementRule.element.type = type;
-
-    this.setState({
-      game: game
-    });
-  }
-
-  changeElementName = (name: string) => {
-    const game = this.state.game;
-    const requirementRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRelationshipRule;
-
-    requirementRule.element.name = name;
-
-    this.setState({
-      game: game
-    });
-  }
-
-  changeRequiredType = (type: string, index: number) => {
-    const game = this.state.game;
-    const requirementRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRelationshipRule;
-
-    requirementRule.relationshipElements[index].type = type;
-
-    this.setState({
-      game: game
-    });
-  }
-
-  changeRequiredName = (name: string, index: number) => {
-    const game = this.state.game;
-    const requirementRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRelationshipRule;
-
-    requirementRule.relationshipElements[index].name = name;
-
-    this.setState({
-      game: game
-    });
-  }
-
   render() {
-    const objectOptions: JSX.Element[] = [];
+    let x = 0;
+    let y = 0;
 
-    this.state.game.zones.map((zone: TovelundZone) => {
-      objectOptions.push(<option key={`${TovelundElementType.Zone}_${zone.id}`} value={`${TovelundElementType.Zone}_${zone.id}`}>{TovelundElementType.Zone} {zone.id}</option>);
-    });
+    const shapeElements: JSX.Element[] = []
+    let selectedShape: any = undefined;
 
-    this.state.game.routes.map((route: TovelundRoute) => {
-      objectOptions.push(<option key={`${TovelundElementType.Route}_${route.id}`} value={`${TovelundElementType.Route}_${route.id}`}>{TovelundElementType.Route} {route.id}</option>);
-    });
+    if (this.state.selectedElementType === TovelundElementType.Rectangle && this.state.selectedElementId) {
+      const rectangle = this.state.game.getRectangle(this.state.selectedElementId);
 
-    this.state.game.destinations.map((destination: TovelundDestination) => {
-      objectOptions.push(<option key={`${TovelundElementType.Destination}_${destination.id}`} value={`${TovelundElementType.Destination}_${destination.id}`}>{TovelundElementType.Destination} {destination.id}</option>);
-    });
+      if (rectangle) {
+        x = rectangle.x;
+        y = rectangle.y;
 
-    const featureOptions: JSX.Element[] = [];
-    const shapeOptions: JSX.Element[] = [];
+        shapeElements.push(<option key="recangleHORIZONTAL" value="HORIZONTAL">HORIZONTAL</option>);
+        shapeElements.push(<option key="recangleVERTICAL" value="VERTICAL">VERTICAL</option>);
 
-    let x: number = 0;
-    let y: number = 0;
+        selectedShape = rectangle.attributes["Orientation"];
+      }
+    } else if (this.state.selectedElementType === TovelundElementType.Point && this.state.selectedElementId) {
+      const point = this.state.game.getPoint(this.state.selectedElementId);
 
-    if (this.state.selectedElementType === TovelundElementType.Destination) {
-      const destination: TovelundDestination = this.state.game.destinations.filter(s => s.id === this.state.selectedElementId)[0];
+      if (point) {
+        x = point.x;
+        y = point.y;
 
-      shapeOptions.push(<option key="horizontal" value="HORIZONTAL">Horizontal</option>);
-      shapeOptions.push(<option key="vertical" value="VERTICAL">Vertical</option>);
+        shapeElements.push(<option key="pointSMALL" value="SMALL">SMALL</option>);
+        shapeElements.push(<option key="pointMEDIUM" value="MEDIUM">MEDIUM</option>);
+        shapeElements.push(<option key="pointLARGE" value="LARGE">LARGE</option>);
 
-      x = destination.point.x;
-      y = destination.point.y;
-    } else if (this.state.selectedElementType === TovelundElementType.Route) {
-      const route: TovelundRoute = this.state.game.routes.filter(r => r.id === this.state.selectedElementId)[0];
+        selectedShape = point.attributes["Size"];
+      }
+    } else if (this.state.selectedElementType === TovelundElementType.Line && this.state.selectedElementId) {
+      const line = this.state.game.getLine(this.state.selectedElementId);
 
-      route.points.map((_point: TovelundPoint, index: number) => {
-        featureOptions.push(<option key={`${TovelundIndexType.Point}_${index}`}>{TovelundIndexType.Point}_{index}</option>);
+      if (line) {
+        x = line.vertices[0].x;
+        y = line.vertices[0].y;
+
+        shapeElements.push(<option key="pointOPEN" value="OPEN_BORDER">Open, Border</option>);
+        shapeElements.push(<option key="pointCLOSED" value="CLOSED_BORDER">Closed, Border</option>);
+        shapeElements.push(<option key="pointOPEN" value="OPEN_NOTBORDER">Open, Not Border</option>);
+        shapeElements.push(<option key="pointCLOSED" value="CLOSED_NOTBORDER">Closed, Not Border</option>);
+
+        selectedShape = `${line.attributes["IsClosed"] ? "CLOSED" : "OPEN"}_${line.attributes["IsBorder"] ? "BORDER" : "NOTBORDER"}`;
+      }
+    } else if (this.state.selectedElementType === TovelundElementType.Vertex && this.state.selectedElementId) {
+      const vertex = this.state.game.getVertex(this.state.selectedElementId);
+
+      if (vertex) {
+        x = vertex.x;
+        y = vertex.y;
+      }
+    }
+
+    const entityElements = this.state.game.getEntities().map((entity: TovelundEntity, index: number) => <option key={`entityOption${entity.id}`} value={entity.id}>
+      {entity.name}
+    </option>);
+
+    let entityGroupElements: JSX.Element[] = this.state.game.getEntityGroups().map((group: TovelundEntityGroup) => <option key={`entityGroup${group.id}`} value={group.id}>
+      {group.id}: {group.entityGroupTypeId}
+    </option>);
+
+    let entityGroupTypeElements: JSX.Element[] = this.state.game.getEntityGroupTypes().map((groupType: { id: string, name: string }) => <option key={`entityGroupType${groupType.id}`} value={groupType.id}>
+      {groupType.id}: {groupType.name}
+    </option>);
+
+    let groupEntityElements: JSX.Element[] = [];
+
+    if (this.state.selectedEntityGroupId) {
+      groupEntityElements = this.state.game.getEntityGroup(this.state.selectedEntityGroupId).entityIds.map((entityId: string) => <div key={`groupEntity${entityId}`}>
+        {this.state.game.getEntity(entityId).name}
+      </div>);
+    }
+
+    let entityFeatureElements: JSX.Element[] = [];
+
+    if (this.state.selectedEntityId) {
+      entityFeatureElements.push(<option key={`entityType"NONE"`} value="NONE">
+        NONE
+      </option>);
+
+      const entity = this.state.game.getEntity(this.state.selectedEntityId);
+
+      const featureCollection = this.state.game.getFeatureCollection(entity.featureCollectionId);
+
+      featureCollection.set.map((feature: { id: string, type: string, name: string }) => {
+        entityFeatureElements.push(<option key={`entityId${feature.id}`} value={feature.id}>
+          {feature.type}
+        </option>);
+      });
+    }
+
+    const featureCollectionElements = this.state.game.getFeatureCollections().map((collection: TovelundFeatureCollection) => <option key={`symbolOption${collection.id}`} value={collection.id}>
+      {collection.name}
+    </option>);
+
+    const featureCollectionColorElements: JSX.Element[] = [];
+    const collectionFeatureElements: JSX.Element[] = [];
+
+    if (this.state.selectedFeatureCollectionId) {
+      const featureCollection = this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId);
+
+      featureCollection.set.map((feature: { id: string, name: string, symbol: string }, index: number) => {
+        collectionFeatureElements.push(<option key={`featureName${index}`} value={feature.id}>
+          {feature.symbol}: {feature.name}
+        </option>);
       });
 
-      x = route.points[this.state.selectedIndex].x;
-      y = route.points[this.state.selectedIndex].y;
-    } else if (this.state.selectedElementType === TovelundElementType.Zone) {
-      const zone: TovelundZone = this.state.game.zones.filter(z => z.id === this.state.selectedElementId)[0];
-      const points = zone.points;
+      Object.values(TovelundColor).map((color: string) => {
+        featureCollectionColorElements.push(<option key={`featureColor${color}`} value={color} style={{ backgroundColor: color }}>
+          {color}
+        </option>);
+      });
+    }
 
-      if (points) {
-        points.map((_point: TovelundPoint, index: number) => {
-          featureOptions.push(<option key={`${TovelundIndexType.Point}_${index}`}>{TovelundIndexType.Point}_{index}</option>);
+    const availableFeatureTypeElements = Object.values(TovelundFeatureType).map((type: string) => <option key={`entityType_${type}`} value={type}>
+      {type}
+    </option>);
+
+    const availableFeatureSymbolElements = this.state.game.getAvailableFeatureSymbols().map((featureSymbol: string) => <option key={`entitySybmol_${featureSymbol}`} value={featureSymbol}>
+      {featureSymbol}
+    </option>)
+
+    const elementElements: JSX.Element[] = [];
+
+    if (this.state.selectedEntityId) {
+      const entity = this.state.game.getEntity(this.state.selectedEntityId);
+
+      if (entity.rectangle) {
+        elementElements.push(<option key={`rectangle${entity.rectangle.id}`} value={`${TovelundElementType.Rectangle}_${entity.rectangle.id}`}>
+          Rectangle
+        </option>);
+      }
+
+      entity.points.map((point: { id: string }, index: number) => {
+        elementElements.push(<option key={`point${point.id}`} value={`${TovelundElementType.Point}_${point.id}`}>
+          Point {index + 1}
+        </option>);
+      });
+
+      entity.lines.map((line: { id: string, vertices: { id: string }[] }, lineIndex: number) => {
+        elementElements.push(<option key={`line${line.id}`} value={`${TovelundElementType.Line}_${line.id}`}>
+          Line {lineIndex + 1}
+        </option>);
+
+        line.vertices.map((vertex: { id: string }, vertexIndex: number) => {
+          elementElements.push(<option key={`vertex${vertex.id}`} value={`${TovelundElementType.Vertex}_${vertex.id}`}>
+            Line {lineIndex + 1} Vertex {vertexIndex + 1}
+          </option>);
         });
-      }
-
-      zone.features.map((_feature: TovelundZoneFeature, index: number) => {
-        featureOptions.push(<option key={`${TovelundIndexType.Feature}_${index}`}>{TovelundIndexType.Feature}_{index}</option>);
       });
-
-      if (this.state.selectedIndexType === TovelundIndexType.Point) {
-        if (points) {
-          x = points[this.state.selectedIndex].x;
-          y = points[this.state.selectedIndex].y;
-        }
-      } else if (this.state.selectedIndexType === TovelundIndexType.Feature) {
-        shapeOptions.push(<option key="small" value={TovelundFeatureSize.Small}>{TovelundFeatureSize.Small}</option>);
-        shapeOptions.push(<option key="medium" value={TovelundFeatureSize.Medium}>{TovelundFeatureSize.Medium}</option>);
-        shapeOptions.push(<option key="large" value={TovelundFeatureSize.Large}>{TovelundFeatureSize.Large}</option>);
-
-        x = zone.features[this.state.selectedIndex].point.x;
-        y = zone.features[this.state.selectedIndex].point.y;
-      }
     }
 
-    const availableElementTypeOptions: JSX.Element[] = []
-    const typeOptions: JSX.Element[] = [];
-
-    for (let type in TovelundDestinationName) {
-      if (type.toUpperCase() !== TovelundDestinationName.None) {
-        if (this.state.selectedElementType === TovelundElementType.Destination) {
-          typeOptions.push(
-            <option key={`destinationType_${type}`} value={type.toUpperCase()}>{type}</option>
-          );
-        }
-        availableElementTypeOptions.push(
-          <option key={`elementTypeOption_${type}`} value={`${TovelundElementType.Destination}_${type.toUpperCase()}`}>{type}</option>
-        );
-      }
-    }
-
-    for (let type in TovelundRouteName) {
-      if (type.toUpperCase() !== TovelundRouteName.None) {
-        if (this.state.selectedElementType === TovelundElementType.Route) {
-          typeOptions.push(
-            <option key={`routeType_${type}`} value={type.toUpperCase()}>{type}</option>
-          );
-        }
-        availableElementTypeOptions.push(
-          <option key={`elementTypeOption_${type}`} value={`${TovelundElementType.Destination}_${type.toUpperCase()}`}>{type}</option>
-        );
-      }
-    }
-
-    for (let type in TovelundZoneName) {
-      if (type.toUpperCase() !== TovelundDestinationName.None) {
-        if (this.state.selectedElementType === TovelundElementType.Zone) {
-          typeOptions.push(
-            <option key={`zoneType_${type}`} value={type.toUpperCase()}>{type}</option>
-          );
-        }
-        availableElementTypeOptions.push(
-          <option key={`elementTypeOption_${type}`} value={`${TovelundElementType.Destination}_${type.toUpperCase()}`}>{type}</option>
-        );
-      }
-    }
-
-    const gameOptions: JSX.Element[] = this.state.games.map((game: TovelundGameDetails, index: number) =>
+    const gameOptions: JSX.Element[] = this.state.games.map((game: { id: number, title: string }) =>
       <option key={`gameId${game.id}`} value={game.id}>{game.title}</option>
     );
 
-    const destinationTypes = this.state.game.symbols.filter(s => s.type === TovelundElementType.Destination);
+    const clueElements: JSX.Element[] = this.state.game.getClues().map((clue: { id: string, description: string }, index: number) => <option key={`clue${clue.id}`} value={clue.id}>
+      {index}: {clue.description}
+    </option>);
 
-    const destinationTypeElements: JSX.Element[] = destinationTypes.map((type: TovelundSymbol, index: number) =>
-      <div key={`types${index}`} className="information">{type.symbol}: {type.name}</div>
-    );
+    const ruleElements: JSX.Element[] = [];
 
-    const tempRelationship: JSX.Element[] = this.state.tempRelationship.map((element: TovelundElementId, index: number) =>
-      <div key={`elements${index}`} className="information">{element.type}_{element.id}</div>
-    );
+    if (this.state.selectedClueId) {
+      const clue = this.state.game.getClue(this.state.selectedClueId);
 
-    const gameRelationships: JSX.Element[] = this.state.game.relationships.map((value: TovelundElementId[], index: number) => {
-      const relationships: JSX.Element[] = value.map((element: TovelundElementId, elementIndex: number) =>
-        <div key={`relationship${index}element${elementIndex}`} className="information">{element.type} {element.id}</div>
-      );
-
-      return <div key={`relationship${index}`}>
-        <div className="text">Relationship {index}</div>
-        {relationships}
-      </div>;
-    });
-
-    let shape = "NONE";
-    let elementName = "NONE";
-
-    if (this.state.selectedElementType === TovelundElementType.Destination) {
-      const destination: TovelundDestination = this.state.game.destinations.filter(d => d.id === this.state.selectedElementId)[0];
-
-      shape = destination.angle;
-      elementName = destination.fixedName ? destination.fixedName : "NONE";
-    } else if (this.state.selectedElementType === TovelundElementType.Route) {
-      const route: TovelundRoute = this.state.game.routes.filter(r => r.id === this.state.selectedElementId)[0];
-
-      elementName = route.name;
-    } else if (this.state.selectedElementType === TovelundElementType.Zone) {
-      const zone: TovelundZone = this.state.game.zones.filter(z => z.id === this.state.selectedElementId)[0];
-
-      elementName = zone.name;
-
-      if (this.state.selectedIndexType === TovelundIndexType.Feature) {
-        var feature = zone.features[this.state.selectedIndex];
-
-        shape = feature ? feature.shape : "NONE";
-      }
+      clue.rules.map((rule: { id: string, type: string }) => {
+        ruleElements.push(<option key={`rule${rule.id}`} value={rule.id}>
+          {rule.id}: {rule.type}
+        </option>);
+      });
     }
 
-    const clueOptions = this.state.game.clues.map((clue: TovelundClue, index: number) =>
-      <option key={`clue${index}`} value={index}>{index}: {clue.description}</option>
-    );
+    const selectedElementIds: string[] = [];
 
-    let descriptionPreview: (string | JSX.Element)[] = [];
+    if (this.state.highlightMode === "ELEMENT" && this.state.selectedElementId !== undefined) {
+      selectedElementIds.push(this.state.selectedElementId);
+    } else if (this.state.highlightMode === "GROUP" && this.state.selectedEntityGroupId !== undefined) {
+      const group = this.state.game.getEntityGroup(this.state.selectedEntityGroupId);
 
-    if (this.state.selectedClueIndex !== -1) {
-      const descriptionElements = this.state.game.clues[this.state.selectedClueIndex].description.split("|");
+      group.entityIds.map((entityId: string) => {
+        const entity = this.state.game.getEntity(entityId);
 
-      for (let i = 0; i < descriptionElements.length; i++) {
-        const descriptionElement = descriptionElements[i];
+        entity.points.map((point: { id: string }) => {
+          selectedElementIds.push(point.id);
+        });
 
-        if (this.state.game.symbols.filter(s => s.name === descriptionElement).length) {
-          const symbol = this.state.game.symbols.filter(s => s.name === descriptionElement)[0].symbol;
+        entity.lines.map((line: { id: string }) => {
+          selectedElementIds.push(line.id);
+        });
 
-          descriptionPreview.push(<span style={{ color: TovelundColor.Blue }}>{symbol}</span>);
-        } else {
-          descriptionPreview.push(descriptionElement);
+        if (entity.rectangle !== undefined) {
+          selectedElementIds.push(entity.rectangle.id);
         }
+      });
+    }
+
+    const entitySelector = <div className="component">
+      <select value={this.state.selectedEntityId ? this.state.selectedEntityId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectEntity(event.currentTarget.value)} style={{ width: "10em" }}>
+        <option disabled value="NONE">None</option>
+        {entityElements}
+      </select>
+    </div>;
+
+    const elementSelector = <div className="component">
+      <select value={this.state.selectedElementType !== undefined ? `${this.state.selectedElementType}_${this.state.selectedElementId}` : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectElement(event.currentTarget.value)} style={{ width: "10em" }}>
+        <option disabled value="NONE">None</option>
+        {elementElements}
+      </select>
+    </div>;
+
+    let ruleDetails: JSX.Element = <div className="component">
+      <div className="information">No feature selected</div>
+    </div>;
+
+    if (this.state.selectedRuleId !== undefined) {
+      const rule = this.state.game.getRule(this.state.selectedRuleId);
+
+      if (rule.type === "RELATIONSHIP") {
+        const relationshipRule = rule as TovelundRelationshipRule;
+
+        ruleDetails = <>
+          <div className="component">
+            <div className="information">Group Type: {relationshipRule.entityGroupTypeIds}</div>
+          </div>
+          <div className="component">
+            <select value={relationshipRule.mode} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectRelationshipRuleMode(event.currentTarget.value)} style={{ width: "10em" }}>
+              <option value="INCLUDE">INCLUDE</option>
+              <option value="EXCLUDE">EXCLUDE</option>
+            </select>
+          </div>
+          <div className="component">
+            <select value={relationshipRule.logic} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectRelationshipRuleLogic(event.currentTarget.value)} style={{ width: "10em" }}>
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+              <option value="XOR">XOR</option>
+            </select>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={this.addFeatureStartToRelationshipRule} disabled={this.state.selectedFeatureId === undefined}>Add FeatureStartId</button>
+            <button className="action" onClick={this.addFeatureEndToRelationshipRule} disabled={this.state.selectedFeatureId === undefined}>Add FeatureEndId</button>
+          </div>
+          <div className="component">
+            <div className="information">Feature Starts: {relationshipRule.featureStartIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+            <div className="information">Feature Ends: {relationshipRule.featureEndIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+          </div>
+        </>;
+      } else if (rule.type === "QUANTITY") {
+        const quantityRule = rule as TovelundQuantityRule;
+
+        ruleDetails = <>
+          <div className="component buttons">
+            <button className="action" onClick={this.addFeatureToQuantityRule} disabled={this.state.selectedFeatureId === undefined}>Add FeatureId</button>
+          </div>
+          <div className="component">
+            <label htmlFor="quantities">Quantities</label>
+            <br />
+            <input type="string" id="quantities" value={this.state.quantitiesString} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeQuantitiesOfQuantityRule(event.target.value)} />
+          </div>
+          <div className="component">
+            <div className="information">Features: {quantityRule.featureIds.map(featureId => this.state.game.getFeature(featureId).name).join(",")}</div>
+          </div>
+          <div className="component">
+            <div className="information">Quantities: {quantityRule.quantities.join(",")}</div>
+          </div>
+        </>;
+      } else if (rule.type === "DISTANCE") {
+        const distanceRule = rule as TovelundDistanceRule;
+
+        ruleDetails = <>
+          <div className="component">
+            <select value={distanceRule.mode} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectDistanceRuleMode(event.currentTarget.value)} style={{ width: "10em" }}>
+              <option value="MATCH">MATCH</option>
+              <option value="MISMATCH">MISMATCH</option>
+            </select>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={this.addFeatureStartToDistanceRule} disabled={this.state.selectedFeatureId === undefined}>Add Feature Start Id</button>
+            <button className="action" onClick={this.addFeatureMiddleToDistanceRule} disabled={this.state.selectedFeatureId === undefined}>Add Feature Middle Id</button>
+            <button className="action" onClick={this.addFeatureEndToDistanceRule} disabled={this.state.selectedFeatureId === undefined}>Add Feature End Id</button>
+          </div>
+          <div className="component">
+            <div className="information">Feature Starts: {distanceRule.featureStartIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+          </div>
+          <div className="component">
+            <div className="information">Feature Middles: {distanceRule.featureMiddleIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+          </div>
+          <div className="component">
+            <div className="information">Feature Ends: {distanceRule.featureEndIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+          </div>
+        </>;
+      } else if (rule.type === "SEQUENCE") {
+        const sequenceRule = rule as TovelundSequenceRule;
+        const sequenceElements = sequenceRule.featureIds.map((_featureIds: string[], index: number) => <option key={`SequenceIndex_${index}`} value={`SequenceIndex_${index}`}>
+          Sequence Index {index}
+        </option>);
+
+        ruleDetails = <>
+          <div className="component">
+            <select value={sequenceRule.mode} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectSequenceRuleMode(event.currentTarget.value)} style={{ width: "10em" }}>
+              <option value="MATCH">Match</option>
+              <option value="MISMATCH">Mismatch</option>
+            </select>
+          </div>
+          <div className="component">
+            <select value={sequenceRule.canRevisit ? "CANREVISIT" : "CANNOTREVISIT"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectSequenceCanRevisit(event.currentTarget.value)} style={{ width: "10em" }}>
+              <option value="CANREVISIT">Can Revisit</option>
+              <option value="CANNOTREVISIT">Cannot Revisit</option>
+            </select>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={this.addIndexToSequenceRule}>Add Index To Sequence Rule</button>
+          </div>
+          <div className="component">
+            <select value={`SequenceIndex_${this.state.selectedSequenceIndex}`} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectSequenceIndex(event.currentTarget.value)} style={{ width: "10em" }}>
+              {sequenceElements}
+            </select>
+          </div>
+          <div className="component buttons">
+            <button className="action" onClick={this.addFeatureToSequenceAtIndex}>Add Feature To Sequence At Index</button>
+          </div>
+          {this.state.selectedSequenceIndex !== undefined && < div className="component">
+            <div className="information">Features: {sequenceRule.featureIds[this.state.selectedSequenceIndex].map(featureId => this.state.game.getFeature(featureId).name).join(",")}</div>
+          </div>}
+        </>;
       }
-    }
-
-    let clueRules: JSX.Element[] = [];
-
-    if (this.state.selectedClueIndex !== -1) {
-      clueRules = this.state.game.clues[this.state.selectedClueIndex].rules.map((rule: ITovelundRule, index: number) => <option key={`rule${index}`} value={index}>
-        {index}: {rule.ruleType}
-      </option>);
-    }
-
-    let ruleSettings: (JSX.Element | undefined) = undefined;
-
-    if (this.state.selectedClueIndex !== -1 && this.state.selectedRuleIndex !== -1 && this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex].ruleType == "RANGE") {
-      var rangeRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRangeRule;
-
-      ruleSettings = <div className="section">
-        Name
-        <input type="text" id="rangeRuleType" value={rangeRule.element.name} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeRangeName(event.target.value)} />
-        Min
-        <input type="number" id="rangeRuleMin" value={rangeRule.min} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeRangeMin(event.target.value)} />
-        Max
-        <input type="number" id="rangeRuleMax" value={rangeRule.max} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeRangeMax(event.target.value)} />
-      </div>;
-    } else if (this.state.selectedClueIndex !== -1 && this.state.selectedRuleIndex !== -1 && this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex].ruleType == "RELATIONSHIP") {
-      var requirementRule = this.state.game.clues[this.state.selectedClueIndex].rules[this.state.selectedRuleIndex] as TovelundRelationshipRule;
-
-      const requirementOptions = requirementRule.relationshipElements.map((rule: TovelundElementName, index: number) =>
-        <div key={`requirement${index}`}>
-          Required Type {index}
-          <input type="text" id="requiredRuleType" value={rule.type} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeRequiredType(event.target.value, index)} />
-          Required Name {index}
-          <input type="text" id="requiredRuleName" value={rule.name} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeRequiredName(event.target.value, index)} />
-        </div>
-      );
-
-      ruleSettings = <div className="section">
-        Type
-        <input type="text" id="elementRuleType" value={requirementRule.element.type} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeElementType(event.target.value)} />
-        Name
-        <input type="text" id="elementRuleName" value={requirementRule.element.name} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeElementName(event.target.value)} />
-        {requirementOptions}
-      </div>;
     }
 
     return <div className="section">
       <div className="component">
+        <select value={this.state.mode} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectMode(event.currentTarget.value)} style={{ width: "10em" }}>
+          <option value="LAYERS">Layers</option>
+          <option value="GROUPS">Groups</option>
+          <option value="FEATURES">Features</option>
+          <option value="CLUES">Clues</option>
+        </select>
+      </div>
+      <hr />
+      {this.state.mode === "LAYERS" && <>
+        <div className="component buttons">
+          <button className="action" onClick={this.addEntity} disabled={this.state.selectedFeatureCollectionId === undefined}>Add Entity</button>
+          <button className="action" onClick={this.moveEntityUp}>Move Entity Up</button>
+          <button className="action" onClick={this.addRectangle} disabled={this.state.selectedEntityId === undefined || this.state.game.getEntity(this.state.selectedEntityId).rectangle !== undefined}>Add Rectangle</button>
+          <button className="action" onClick={this.addPoint} disabled={this.state.selectedEntityId === undefined}>Add Point</button>
+          <button className="action" onClick={this.addLine} disabled={this.state.selectedEntityId === undefined}>Add Line</button>
+          <button className="action" onClick={this.addVertex} disabled={!(this.state.selectedElementType === TovelundElementType.Line || this.state.selectedElementType === TovelundElementType.Vertex) || this.state.selectedElementId === undefined}>Add Vertex</button>
+          <button className="action" onClick={this.delete}>Delete</button>
+        </div>
+        {entitySelector}
+        <div className="component">
+          <select value={this.state.selectedEntityId ? (this.state.game.getEntity(this.state.selectedEntityId).featureCollectionId) : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.setEntityFeatureCollection(event.currentTarget.value)} style={{ width: "10em" }}>
+            {featureCollectionElements}
+          </select>
+        </div>
+        <div className="component">
+          <select value={this.state.selectedEntityId ? (this.state.game.getEntity(this.state.selectedEntityId).fixedFeatureId ? this.state.game.getEntity(this.state.selectedEntityId).fixedFeatureId : "NONE") : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectEntityFeatureId(event.currentTarget.value)} style={{ width: "10em" }}>
+            {entityFeatureElements}
+          </select>
+        </div>
+        {elementSelector}
+        <div className="component">
+          <select value={selectedShape} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectElementShape(event.currentTarget.value)} style={{ width: "10em" }}>
+            {shapeElements}
+          </select>
+        </div>
+        {this.state.selectedEntityId !== undefined && <div className="component">
+          <label htmlFor="name">Name</label>
+          <br />
+          <input type="text" id="name" defaultValue={this.state.game.getEntity(this.state.selectedEntityId).name} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeEntityName(event.target.value)} />
+        </div>}
+        <div className="component">
+          <label htmlFor="xValue">X</label>
+          <br />
+          <input type="number" id="xValue" value={x} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeX(event.target.value)} />
+        </div>
+        <div className="component">
+          <label htmlFor="yValue">Y</label>
+          <br />
+          <input type="number" id="yValue" value={y} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeY(event.target.value)} />
+        </div>
+        <div className="component">
+          <label htmlFor="gameScale">Scale</label>
+          <br />
+          <input type="number" id="gameScale" value={this.state.game.getScale()} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeScale(event.target.value)} min={50} max={150} />
+        </div>
+      </>}
+      {this.state.mode === "GROUPS" && <>
+        <div className="component buttons">
+          <button className="action" onClick={this.addEntityGroupType}>Add Entity Group Type</button>
+        </div>
+        <div className="component">
+          <select value={this.state.selectedEntityGroupTypeId ? this.state.selectedEntityGroupTypeId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectEntityGroupType(event.currentTarget.value)} style={{ width: "10em" }}>
+            <option disabled value="NONE">None</option>
+            {entityGroupTypeElements}
+          </select>
+        </div>
+        <div className="component buttons">
+          <button className="action" onClick={this.addEntityGroup}>Add Entity Group</button>
+          <button className="action" onClick={this.deleteEntityGroup}>Delete Entity Group</button>
+          <button className="action" onClick={this.addEntityToGroup} disabled={this.state.selectedEntityId === undefined}>Add Entity To Group</button>
+        </div>
+        {this.state.selectedEntityGroupId !== undefined && <div className="component">
+          <div className="information">
+            {this.state.game.getEntityGroupType(this.state.game.getEntityGroup(this.state.selectedEntityGroupId).entityGroupTypeId).name}
+          </div>
+        </div>}
+        <div className="component">
+          {groupEntityElements}
+        </div>
+        <div className="component">
+          <select value={this.state.selectedEntityGroupId ? this.state.selectedEntityGroupId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectEntityGroup(event.currentTarget.value)} style={{ width: "10em" }}>
+            <option disabled value="NONE">None</option>
+            {entityGroupElements}
+          </select>
+        </div>
+      </>}
+      {this.state.mode === "FEATURES" && <>
+        <div className="component buttons">
+          <button className="action" onClick={this.addFeatureCollection}>Add Feature Collection</button>
+        </div>
+        <div className="component">
+          <select value={this.state.selectedFeatureCollectionId ? this.state.selectedFeatureCollectionId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectFeatureCollection(event.currentTarget.value)} style={{ width: "10em" }}>
+            <option disabled value="NONE">None</option>
+            {featureCollectionElements}
+          </select>
+        </div>
+        <div className="component">
+          <label htmlFor="featureCollectionName">Feature Collection Name</label>
+          <br />
+          <input type="string" id="featureCollectionName" value={this.state.selectedFeatureCollectionId ? this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId).name : undefined} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeFeatureCollectionName(event.target.value)} />
+        </div>
+        <div className="component">
+          <select value={this.state.selectedFeatureCollectionId ? this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId).color : undefined} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectFeatureCollectionColor(event.currentTarget.value)} style={{ width: "10em" }}>
+            {featureCollectionColorElements}
+          </select>
+        </div>
+        <div className="component">
+          <select value={this.state.selectedFeatureId ? this.state.selectedFeatureId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectFeatureId(event.currentTarget.value)} style={{ width: "10em" }}>
+            <option disabled value="NONE">None</option>
+            {collectionFeatureElements}
+          </select>
+        </div>
+        <div className="component">
+          <label htmlFor="featureName">Feature Name</label>
+          <br />
+          <input type="text" id="featureName" value={this.state.selectedAvailableFeatureName} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeAvailableFeatureName(event.target.value)} />
+        </div>
+        <div className="component">
+          <select value={this.state.selectedAvailableFeatureType} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectAvailableFeatureType(event.currentTarget.value)} style={{ width: "10em" }}>
+            {availableFeatureTypeElements}
+          </select>
+        </div>
+        <div className="component">
+          <select value={this.state.selectedAvailableFeatureSymbol} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectAvailableFeatureSymbol(event.currentTarget.value)} style={{ width: "10em" }}>
+            {availableFeatureSymbolElements}
+          </select>
+        </div>
+        <div className="component buttons">
+          <button className="action" onClick={this.addFeature} disabled={this.state.selectedFeatureCollectionId === undefined || this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId).set.length === 8 || this.state.selectedAvailableFeatureType === undefined || this.state.selectedAvailableFeatureName === undefined || this.state.selectedAvailableFeatureSymbol === undefined}>Add Feature Type</button>
+        </div>
+      </>}
+      {this.state.mode === "CLUES" && <>
+        <div className="component buttons">
+          <button className="action" onClick={this.addClue}>Add Clue</button>
+          <button className="action" onClick={this.deleteClue}>Delete Clue</button>
+        </div>
+        <div className="component">
+          <select value={this.state.selectedClueId !== undefined ? this.state.selectedClueId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectClueId(event.currentTarget.value)} style={{ width: "10em" }}>
+            <option value="NONE" disabled>None</option>
+            {clueElements}
+          </select>
+        </div>
+        {this.state.selectedClueId !== undefined && <>
+          <div className="component buttons">
+            <button className="action" onClick={this.moveClueUp}>Move Clue Up</button>
+          </div>
+          <div className="component">
+            <label htmlFor="clueDescription">Clue Description</label>
+            <br />
+            <input type="text" id="clueDescription" value={this.state.game.getClue(this.state.selectedClueId).description} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeClueDescription(event.target.value)} />
+          </div>
+          <div className="component">
+            <div className="information">
+              {convertClueDescription(this.state.game.getClue(this.state.selectedClueId).description)}
+            </div>
+          </div>
+        </>}
+        <div className="component">
+          <select value={this.state.selectedRuleType} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectRuleType(event.currentTarget.value)} style={{ width: "10em" }}>
+            <option value="RELATIONSHIP">Relationship</option>
+            <option value="QUANTITY">Quantity</option>
+            <option value="DISTANCE">Distance</option>
+            <option value="SEQUENCE">Sequence</option>
+          </select>
+        </div>
+        <div className="component buttons">
+          <button className="action" onClick={this.addRule} disabled={this.state.selectedClueId === undefined}>Add Rule</button>
+          <button className="action" onClick={this.deleteRule} disabled={this.state.selectedRuleId === undefined}>Delete Rule</button>
+        </div>
+        <div className="component">
+          <select value={this.state.selectedRuleId !== undefined ? this.state.selectedRuleId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectRuleId(event.currentTarget.value)} style={{ width: "10em" }}>
+            <option value="NONE" disabled>None</option>
+            {ruleElements}
+          </select>
+        </div>
+        {ruleDetails}
+      </>}
+      <hr />
+      <div className="component">
+        <select value={this.state.highlightMode} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectHighlightMode(event.currentTarget.value)} style={{ width: "10em" }}>
+          <option key="ELEMENT" value="ELEMENT">Element</option>
+          <option key="ENTITY" value="ENTITY">Entity</option>
+          <option key="GROUP" value="GROUP">Group</option>
+          <option key="LAYER" value="LAYER">Layer</option>
+        </select>
+      </div>
+      <div className="component">
+        <div style={{ width: "24em", margin: "auto" }}>
+          {getTovelundMap(this.state.game, this.selectEntity, selectedElementIds, true)}
+        </div>
+      </div>
+      <div className="component">
+        <label htmlFor="gameTitle">Game Title</label>
+        <br />
+        <input type="string" id="gameTitle" value={this.state.gameTitle} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeTitle(event.target.value)} />
+      </div>
+      <div className="component buttons">
+        <button className="action" onClick={this.countSolutions}>Count Solutions</button>
+        <button className="action" onClick={this.saveGame}>Save</button>
+      </div>
+      <div className="component">
         <select value={this.state.selectedGameId} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectGame(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value="-1" disabled>Choose</option> 
+          <option value="-1" disabled>Choose</option>
           {gameOptions}
         </select>
       </div>
@@ -856,128 +1409,14 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         <button className="action" onClick={this.loadGame} disabled={this.state.selectedGameId === -1}>Load Game</button>
       </div>
       <div className="component">
-        <input type="text" value={this.state.elementSymbol} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeElementSymbol(event.target.value)} maxLength={1} style={{ width: "2em", marginRight: "1em" }} />
-        <select value={`${this.state.elementType}_${this.state.elementName}`} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectElement(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value={TovelundDestinationName.None} disabled>Choose</option> 
-          {availableElementTypeOptions}
-        </select>
+        <div className="text">Solution Count: {this.state.solutionCount}</div>
+        <div className="text">Selected Entity Id: {this.state.selectedEntityId}</div>
+        <div className="text">Selected Feature Type: {this.state.selectedElementType}</div>
+        <div className="text">Selected Feature Id: {this.state.selectedElementId}</div>
+        <div className="text">Selected Entity Type: {this.state.selectedEntityId && this.state.game.getEntity(this.state.selectedEntityId).fixedFeatureId}</div>
       </div>
       <div className="component buttons">
-        <button className="action" onClick={this.addSymbol} disabled={this.state.elementType === "NONE" || this.state.elementSymbol === "" || this.state.game.symbols.filter((value: TovelundSymbol) => this.state.elementSymbol === value.symbol).length > 0}>
-          Add Symbol</button>
-        <button className="action" onClick={this.addDestination}>Add destination</button>
-        <button className="action" onClick={this.addRoute}>Add Route</button>
-        <button className="action" onClick={() => this.addZone(false)}> Add Zone</button>
-        <button className="action" onClick={() => this.addZone(true)} disabled={this.state.game.zones.filter(z => z.id === 0).length > 0}> Add Base Zone</button>
-        <button className="action" onClick={this.addPoint} disabled={(this.state.selectedElementType !== TovelundElementType.Route && this.state.selectedElementType !== TovelundElementType.Zone) || this.state.selectedElementId === 0}>Add Point</button>
-        <button className="action" onClick={this.addFeature} disabled={this.state.selectedElementType !== TovelundElementType.Zone}>Add Feature</button>
-        <button className="action" onClick={this.addClue}>Add Clue</button>
-        <button className="action" onClick={this.addElementToRelation} disabled={this.state.selectedElementType === "NONE"}>Add Element To Relation</button>
-        <button className="action" onClick={this.createRelationship} disabled={this.state.tempRelationship.length < 2}>Create Relationship</button>
-      </div>
-      <div className="component">
-        <select value={`${this.state.selectedElementType}_${this.state.selectedElementId}`} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectSelectedElement(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value="NONE_-1" disabled>Choose</option> 
-          {objectOptions}
-        </select>
-      </div>
-      <div className="component">
-        <select value={`${this.state.selectedIndexType}_${this.state.selectedIndex}`} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectObjectIndex(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value="NONE_-1" disabled>Choose</option> 
-          {featureOptions}
-        </select>
-      </div>
-      <div className="component">
-        <select value={shape} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectShape(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value="NONE" disabled={this.state.selectedElementType === TovelundElementType.Destination}>N/A</option>
-          {shapeOptions}
-        </select>
-      </div>
-      <div className="component">
-        <select value={elementName} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectFixedElementName(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value="NONE">None</option>
-          {typeOptions}
-        </select>
-      </div>
-      <div className="component">
-        <label htmlFor="xValue">X</label>
-        <br />
-        <input type="number" id="xValue" value={x} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeX(event.target.value)} />
-      </div>
-      <div className="component">
-        <label htmlFor="yValue">Y</label>
-        <br />
-        <input type="number" id="yValue" value={y} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeY(event.target.value)} />
-      </div>
-      <div className="component">
-        <label htmlFor="gameTitle">Name</label>
-        <br />
-        <input type="string" id="gameTitle" value={this.state.gameTitle} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeTitle(event.target.value)} />
-      </div>
-      <div className="component">
-        <label htmlFor="gameScale">Scale</label>
-        <br />
-        <input type="number" id="gameScale" value={this.state.game.scale} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeScale(event.target.value)} />
-      </div>
-      <div className="component">
-        <div style={{ width: "24em", margin: "auto" }}>
-          {getTovelundMap(this.state.game, this.state.selectedElementType, this.state.selectedElementId, this.state.selectedIndexType, this.state.selectedIndex, this.selectDestination)}
-        </div>
-      </div>
-      <div className="component">
-        <div className="text">destination types:</div>
-        {destinationTypeElements}
-      </div>
-      <div className="component">
-        <div className="text">temp relationship:</div>
-        {tempRelationship}
-      </div>
-      <div className="component">
-        <div className="subtitle">game relationships:</div>
-        {gameRelationships}
-      </div>
-      <div className="component">
-        <div className="subtitle">game clues:</div>
-      </div>
-      <div className="component">
-        <select value={this.state.selectedClueIndex} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectClueIndex(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value={-1}>None</option>
-          {clueOptions}
-        </select>
-      </div>
-      <div className="component">
-        <label htmlFor="clueDescription">Description</label>
-        <br />
-        <input type="text" id="clueDescription" value={this.state.selectedClueIndex === -1 ? "" : this.state.game.clues[this.state.selectedClueIndex].description} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeClueDescription(event.target.value)} />
-      </div>
-      <div className="component">
-        <div className="text">{descriptionPreview}</div>
-      </div>
-      <div className="component">
-        <select value={this.state.selectedRuleType} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectRuleType(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value="RANGE">RANGE</option>
-          <option value="RELATIONSHIP">RELATIONSHIP</option>
-          <option value="OTHER">OTHER</option>
-        </select>
-      </div>
-      <div className="component buttons">
-        <button className="action" onClick={this.addRule}>Add Rule</button>
-      </div>
-      <div className="component">
-        <select value={this.state.selectedRuleIndex} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectRuleIndex(event.currentTarget.value)} style={{ width: "10em" }}>
-          <option value={-1}>NONE</option>
-          {clueRules}
-        </select>
-      </div>
-      {ruleSettings}
-      <div className="component buttons">
-        <button className="action" onClick={this.saveGame}>Save</button>
-      </div>
-      <div className="component">
-        <div className="text">Selected Element Type: {this.state.selectedElementType}</div>
-        <div className="text">Selected Element Id: {this.state.selectedElementId}</div>
-        <div className="text">Selected Index Type: {this.state.selectedIndexType}</div>
-        <div className="text">Selected Index: {this.state.selectedIndex}</div>
+        <button className="action" onClick={() => { console.log(this.state.game.game) }}>Console Log</button>
       </div>
     </div>;
   }

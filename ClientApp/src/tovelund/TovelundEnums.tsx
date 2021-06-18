@@ -10,136 +10,140 @@ export enum TovelundColor {
   Vermillion = "rgb(213,94,0)",
   ReddishPurple = "rgb(204,121,167)",
   White = "rgb(255,255,255)",
-  Transparent = "transparent"
+  Transparent = "transparent",
+  None = "none"
 }
 
 export enum TovelundElementType {
   None = "NONE",
-  Destination = "DESTINATION",
-  Route = "ROUTE",
-  Zone = "ZONE"
+  Rectangle = "RECTANGLE",
+  Point = "POINT",
+  Line = "LINE",
+  Vertex = "VERTEX"
 }
 
-export enum TovelundIndexType {
-  None = "NONE",
-  Feature = "FEATURE",
-  Point = "POINT"
-}
-
-export enum TovelundFeatureSize {
+export enum TovelundPointSize {
   Small = "SMALL",
-  Medium = "MEDIUM",
   Large = "LARGE"
 }
 
-export enum TovelundDestinationName {
+export enum TovelundFeatureType {
   None = "NONE",
-  Airfield = "AIRFIELD",
-  Butcher = "BUTCHER",
-  House = "HOUSE",
-  Library = "LIBRARY",
-  Lighthouse = "LIGHTHOUSE",
-  Port = "PORT",
-  Store = "STORE",
-  Warehouse = "WAREHOUSE"
-}
-
-export enum TovelundZoneName {
-  None = "NONE",
+  Airport = "AIRPORT",
   Forest = "FOREST",
-  Mountains = "MOUNTAINS",
+  House = "HOUSE",
+  Lighthouse = "LIGHTHOUSE",
+  Mountain = "MOUNTAIN",
+  Railway = "RAILWAY",
+  Road = "ROAD",
+  Seaport = "SEAPORT",
+  Station = "STATION",
+  Store = "STORE",
+  Warehouse = "WAREHOUSE",
   Water = "WATER"
 }
 
-export enum TovelundRouteName {
-  None = "NONE",
-  Road = "ROAD",
-  Railway = "RAILWAY"
-}
-
 export interface TovelundPoint {
+  id: string,
+  attributes: { [key: string]: any; },
   x: number,
   y: number
 }
 
-export interface TovelundDestination {
-  id: number,
-  fixedName?: string,
-  selectedName?: string,
-  symbolColors: { [symbolName: string]: TovelundColor };
-  point: TovelundPoint,
-  angle: "HORIZONTAL" | "VERTICAL",
+export interface TovelundLine {
+  id: string,
+  attributes: { [key: string]: any; },
+  vertices: { id: string, x: number, y: number }[]
 }
 
-export interface TovelundRoute {
-  id: number,
-  name: string,
-  points: TovelundPoint[]
+export interface ITovelundRule {
+  id: string,
+  type: string
 }
 
-export interface TovelundZoneFeature {
-  point: TovelundPoint,
-  shape: string
+export interface TovelundQuantityRule extends ITovelundRule {
+  id: string,
+  type: "QUANTITY",
+  featureIds: string[],
+  quantities: number[]
 }
 
-export interface TovelundZone {
-  id: number,
-  name: string,
-  points?: TovelundPoint[],
-  features: TovelundZoneFeature[]
+export interface TovelundRelationshipRule extends ITovelundRule {
+  id: string,
+  type: "RELATIONSHIP",
+  entityGroupTypeIds: string[],
+  mode: string,
+  logic: string,
+  featureStartIds: string[],
+  featureEndIds: string[]
 }
 
-export interface TovelundSymbol {
+export interface TovelundDistanceRule extends ITovelundRule {
+  id: string,
+  type: "DISTANCE",
+  entityGroupTypeIds: string[],
+  mode: string,
+  distances?: number[],
+  featureStartIds: string[],
+  featureMiddleIds: string[],
+  featureEndIds: string[]
+}
+
+export interface TovelundSequenceRule extends ITovelundRule {
+  id: string,
+  type: "SEQUENCE",
+  entityGroupTypeIds: string[],
+  mode: string,
+  canRevisit: boolean,
+  featureIds: string[][]
+}
+
+export interface TovelundFeature {
+  id: string,
   type: string,
   name: string,
   symbol: string
 }
 
-export interface TovelundElementId {
-  type: string,
-  id: number
+export interface TovelundFeatureCollection {
+  id: string,
+  name: string,
+  color: string,
+  set: TovelundFeature[]
 }
 
-export interface TovelundGameDetails {
-  id: number,
-  title: string
-}
-
-export interface ITovelundRule {
-  ruleType: string
-}
-
-export interface TovelundElementName {
-  type: string,
-  name: string
-}
-
-export interface TovelundRangeRule extends ITovelundRule {
-  ruleType: "RANGE",
-  element: TovelundElementName,
-  min?: number,
-  max?: number
-}
-
-export interface TovelundRelationshipRule extends ITovelundRule {
-  ruleType: "RELATIONSHIP",
-  mode: "INCLUDE" | "EXCLUDE"
-  element: TovelundElementName,
-  relationshipElements: TovelundElementName[]
+export interface TovelundEntityGroup {
+  id: string,
+  entityGroupTypeId: string,
+  entityIds: string[]
 }
 
 export interface TovelundClue {
+  id: string,
   description: string,
   rules: ITovelundRule[],
-  passes?: boolean
+  passes?: boolean,
+  checked?: boolean
+}
+
+export interface TovelundEntity {
+  id: string,
+  name: string,
+  fixedFeatureId?: string,
+  selectedFeatureId?: string,
+  rectangle?: { id: string, attributes: { [key: string]: any; }, x: number, y: number },
+  points: TovelundPoint[],
+  lines: TovelundLine[],
+  innerPencilFeatureIds?: string[],
+  outerPencilFeatureIds?: string[],
+  featureCollectionId: string
 }
 
 export interface TovelundGame {
   scale: number,
-  symbols: TovelundSymbol[],
-  destinations: TovelundDestination[],
-  routes: TovelundRoute[],
-  zones: TovelundZone[],
-  relationships: TovelundElementId[][],
-  clues: TovelundClue[]
+  entities: TovelundEntity[],
+  entityGroups: TovelundEntityGroup[],
+  clues: TovelundClue[],
+  featureCollections: TovelundFeatureCollection[],
+  entityGroupTypes: { id: string, name: string }[]
 }
