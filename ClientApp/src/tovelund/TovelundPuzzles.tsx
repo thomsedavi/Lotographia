@@ -9,7 +9,7 @@ import { LotographiaColor, getColor } from "../common/Colors";
 interface TovelundPuzzlesState {
   stage: string,
   selectedPuzzleId?: number,
-  puzzles: { id: number, title: string, design: TovelundPuzzleDesignClass }[],
+  puzzles: { id: number, title: string, design: TovelundPuzzleDesignClass, difficulty: number }[],
   selectedEntityId?: string,
   solutionPasses?: boolean,
   mode: string,
@@ -41,8 +41,8 @@ export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> 
         .then((response: Response) => {
           if (response.status === 200) {
             response.json()
-              .then((data: { puzzles: { id: number, title: string, design: string }[] }) => {
-                const puzzles = data.puzzles.map((puzzle: { id: number, title: string, design: string }) => {
+              .then((data: { puzzles: { id: number, title: string, design: string, difficulty: number }[] }) => {
+                const puzzles = data.puzzles.map((puzzle: { id: number, title: string, design: string, difficulty: number }) => {
                   const designObject = JSON.parse(puzzle.design);
 
                   const design: TovelundPuzzleDesign = {
@@ -57,7 +57,8 @@ export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> 
                   return {
                     id: puzzle.id,
                     title: puzzle.title,
-                    design: new TovelundPuzzleDesignClass(design)
+                    design: new TovelundPuzzleDesignClass(design),
+                    difficulty: puzzle.difficulty
                   }
                 });
 
@@ -72,9 +73,9 @@ export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> 
     }, 2000);
   }
 
-  selectPuzzle = (puzzleId: string) => {
+  selectPuzzle = (puzzleId: number) => {
     this.setState({
-      selectedPuzzleId: Number(puzzleId)
+      selectedPuzzleId: puzzleId
     });
   }
 
@@ -386,19 +387,27 @@ export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> 
         </div>
       </div>;
     } else if (this.state.stage === "MENU") {
-      const puzzleOptions: JSX.Element[] = this.state.puzzles.map((puzzle: {id: number, title: string}) =>
-        <option key={`puzzleId${puzzle.id}`} value={puzzle.id}>{puzzle.title}</option>
-      );
+      const puzzleOptions: JSX.Element[] = this.state.puzzles.map((puzzle: { id: number, title: string, difficulty: number }) => {
+        let difficulty = "";
+
+        for (let i = 0; i < puzzle.difficulty; i++) {
+          difficulty = `${difficulty}☆`
+        }
+
+        return <div key={`puzzleId${puzzle.id}`} className={`box-item${puzzle.id === this.state.selectedPuzzleId ? " selected" : ""}`} title="hover" onClick={() => this.selectPuzzle(puzzle.id)}>{puzzle.title} ({difficulty})</div>;
+      });
 
       return <div className="section">
         <div className="component">
           <div className="title">Tovelund Puzzles</div>
         </div>
-        <div className="component">
-          <select value={this.state.selectedPuzzleId ? this.state.selectedPuzzleId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectPuzzle(event.currentTarget.value)} style={{ width: "10em" }}>
-            <option value="NONE" disabled>Choose</option>
+        <div className="component box-container">
+          <div className="box-header">
+            Select a puzzle
+          </div>
+          <div className="box-view">
             {puzzleOptions}
-          </select>
+          </div>
         </div>
         <div className="component">
           <div style={{ width: "32em", margin: "auto" }}>

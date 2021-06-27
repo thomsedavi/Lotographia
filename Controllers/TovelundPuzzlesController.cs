@@ -33,7 +33,8 @@ namespace Lotographia.Controllers
                 var puzzle = new TovelundPuzzle
                 {
                     Title = request.Title,
-                    Design = request.Design
+                    Design = request.Design,
+                    Difficulty = request.Difficulty
                 };
 
                 _context.Add(puzzle);
@@ -71,6 +72,7 @@ namespace Lotographia.Controllers
 
                 puzzle.Design = request.Design;
                 puzzle.Title = request.Title;
+                puzzle.Difficulty = request.Difficulty;
 
                 await _context.SaveChangesAsync();
 
@@ -90,7 +92,7 @@ namespace Lotographia.Controllers
             {
                 return StatusCode(StatusCodes.Status200OK, new
                 {
-                    Puzzles = _context.TovelundPuzzles.Select(g => new { g.Id, g.Title, g.Design })
+                    Puzzles = _context.TovelundPuzzles.Select(g => new { g.Id, g.Title, g.Design, g.Difficulty })
                 });
             }
             catch (Exception exception)
@@ -125,5 +127,6 @@ namespace Lotographia.Controllers
     {
         public string Title { get; set; }
         public string Design { get; set; }
+        public byte Difficulty { get; set; }
     }
 }

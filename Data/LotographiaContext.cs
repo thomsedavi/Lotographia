@@ -89,6 +89,10 @@ namespace Lotographia.Data
 
             tovelundPuzzle.Property(b => b.Design)
                 .IsRequired();
+
+            tovelundPuzzle.Property(b => b.Difficulty)
+                .IsRequired()
+                .HasDefaultValue(1);
         }
 
         public DbSet<PaperFolliesGame> PaperFolliesGames { get; set; }

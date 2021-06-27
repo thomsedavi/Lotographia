@@ -18,6 +18,7 @@ export enum TovelundFeatureType {
   House = "HOUSE",
   Lighthouse = "LIGHTHOUSE",
   Mountain = "MOUNTAIN",
+  Plains = "PLAINS",
   Railway = "RAILWAY",
   Road = "ROAD",
   Seaport = "SEAPORT",

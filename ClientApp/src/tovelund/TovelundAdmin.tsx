@@ -12,9 +12,10 @@ interface ErrorData {
 interface TovelundAdminState {
   mode: string,
   selectedPuzzleId: number,
-  puzzles: { id: number, title: string }[],
+  puzzles: { id: number, title: string, difficulty: number }[],
   puzzleId?: number,
   puzzleTitle: string,
+  puzzleDifficulty: number,
   puzzle: TovelundPuzzleDesignClass,
   elementSymbol: string,
   elementName: string,
@@ -48,6 +49,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       selectedPuzzleId: -1,
       puzzles: [],
       puzzleTitle: "Duck Island",
+      puzzleDifficulty: 1,
       puzzle: new TovelundPuzzleDesignClass(),
       elementSymbol: "",
       elementName: "NONE",
@@ -70,7 +72,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       .then((response: Response) => {
         if (response.status === 200) {
           response.json()
-            .then((data: { puzzles: { id: number, title: string }[] }) => {
+            .then((data: { puzzles: { id: number, title: string, difficulty: number }[] }) => {
               this.setState({
                 puzzles: data.puzzles
               });
@@ -88,6 +90,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   changeTitle = (title: string) => {
     this.setState({
       puzzleTitle: title
+    });
+  }
+
+  changeDifficulty = (difficulty: string) => {
+    this.setState({
+      puzzleDifficulty: Number(difficulty)
     });
   }
 
@@ -110,6 +118,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
             .then((puzzle: TovelundPuzzleDesign) => {
               this.setState({
                 puzzleTitle: this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].title,
+                puzzleDifficulty: this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].difficulty,
                 puzzle: new TovelundPuzzleDesignClass(puzzle),
                 puzzleId: this.state.selectedPuzzleId,
                 selectedEntityId: undefined,
@@ -901,7 +910,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ "Title": this.state.puzzleTitle, "Design": puzzle.getJSON() })
+        body: JSON.stringify({ "Title": this.state.puzzleTitle, "Design": puzzle.getJSON(), "Difficulty": this.state.puzzleDifficulty })
       })
         .then(response => { console.log(response) });
     } else {
@@ -910,7 +919,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ "Title": this.state.puzzleTitle, "Design": puzzle.getJSON() })
+        body: JSON.stringify({ "Title": this.state.puzzleTitle, "Design": puzzle.getJSON(), "Difficulty": this.state.puzzleDifficulty })
       })
         .then(response => { console.log(response) });
     }
@@ -1463,6 +1472,11 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         <label htmlFor="puzzleTitle">Puzzle Title</label>
         <br />
         <input type="string" id="puzzleTitle" value={this.state.puzzleTitle} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeTitle(event.target.value)} />
+      </div>
+      <div className="component">
+        <label htmlFor="puzzleDifficulty">Puzzle Difficuly</label>
+        <br />
+        <input type="number" min={1} max={5} id="puzzleDifficulty" value={this.state.puzzleDifficulty} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeDifficulty(event.target.value)} />
       </div>
       <div className="component buttons">
         <button className="action" onClick={this.countSolutions}>Count Solutions</button>

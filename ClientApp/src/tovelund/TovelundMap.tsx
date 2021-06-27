@@ -233,7 +233,7 @@ export const getTovelundMap = (puzzle: TovelundPuzzleDesignClass, selectEntityId
           <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.15)}L${point.x - (r * 0.2)},${point.y - (r * 0.44)}L${point.x + (r * 0.4)},${point.y - (r * 0.15)}L${point.x + (r * 0.9)},${point.y - (r * 0.44)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Blue4, strokeWidth: 0.005 * scale }} />
           <path d={`M${point.x - (r * 0.9)},${point.y + (r * 0.44)}L${point.x - (r * 0.4)},${point.y + (r * 0.15)}L${point.x + (r * 0.2)},${point.y + (r * 0.44)}L${point.x + (r * 0.6)},${point.y + (r * 0.15)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Blue4, strokeWidth: 0.005 * scale }} />
         </g>;
-      } else {
+      } else if (feature && feature.type === TovelundFeatureType.Plains) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
           <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x - (r * 0.6)},${point.y + (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime2, strokeWidth: 0.005 * scale }} />
           <path d={`M${point.x + (r * 0.4)},${point.y - (r * 0.4)}L${point.x + (r * 0.4)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime3, strokeWidth: 0.005 * scale }} />
