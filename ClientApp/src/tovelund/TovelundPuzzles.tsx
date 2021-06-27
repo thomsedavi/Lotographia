@@ -1,13 +1,15 @@
 ﻿import * as React from "react";
-import { TovelundColor, TovelundGame, TovelundClue } from "./TovelundEnums";
-import { TovelundGameClass } from "./TovelundGameClass";
+import { TovelundPuzzleDesign } from "./TovelundEnums";
+import { TovelundPuzzleDesignClass } from "./TovelundPuzzleDesignClass";
 import { getTovelundMap } from "./TovelundMap";
 import { convertClueDescription } from "./TovelundUtils";
+import { StatusLoading } from "../common/Assets";
+import { LotographiaColor, getColor } from "../common/Colors";
 
-interface TovelundGameState {
+interface TovelundPuzzlesState {
   stage: string,
-  selectedGameId?: number,
-  games: { id: number, title: string, design: TovelundGameClass }[],
+  selectedPuzzleId?: number,
+  puzzles: { id: number, title: string, design: TovelundPuzzleDesignClass }[],
   selectedEntityId?: string,
   solutionPasses?: boolean,
   mode: string,
@@ -15,13 +17,13 @@ interface TovelundGameState {
   showHelp: boolean
 }
 
-export class Tovelund extends React.Component<any, TovelundGameState> {
+export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> {
   constructor(props: any) {
     super(props);
 
     this.state = {
       stage: "LOADING",
-      games: [],
+      puzzles: [],
       mode: "SELECT",
       clueIndex: 0,
       showHelp: false
@@ -29,54 +31,82 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   }
 
   componentDidMount = () => {
-    fetch("api/tovelund", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-      .then((response: Response) => {
-        if (response.status === 200) {
-          response.json()
-            .then((data: { games: { id: number, title: string, design: string }[] }) => {
-              const games = data.games.map((game: { id: number, title: string, design: string }) => {
-                const designObject = JSON.parse(game.design);
-
-                const design: TovelundGame = {
-                  clues: designObject.clues,
-                  entities: designObject.entities,
-                  entityGroups: designObject.entityGroups,
-                  entityGroupTypes: designObject.entityGroupTypes,
-                  featureCollections: designObject.featureCollections,
-                  scale: designObject.scale
-                };
-
-                return {
-                  id: game.id,
-                  title: game.title,
-                  design: new TovelundGameClass(design)
-                }
-              });
-
-              this.setState({
-                games: games,
-                stage: "MENU",
-                selectedGameId: games[0].id
-              });
-            })
+    setTimeout(() => {
+      fetch("api/tovelundpuzzles", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
         }
-      });
+      })
+        .then((response: Response) => {
+          if (response.status === 200) {
+            response.json()
+              .then((data: { puzzles: { id: number, title: string, design: string }[] }) => {
+                const puzzles = data.puzzles.map((puzzle: { id: number, title: string, design: string }) => {
+                  const designObject = JSON.parse(puzzle.design);
+
+                  const design: TovelundPuzzleDesign = {
+                    clues: designObject.clues,
+                    entities: designObject.entities,
+                    entityGroups: designObject.entityGroups,
+                    entityGroupTypes: designObject.entityGroupTypes,
+                    featureCollections: designObject.featureCollections,
+                    scale: designObject.scale
+                  };
+
+                  return {
+                    id: puzzle.id,
+                    title: puzzle.title,
+                    design: new TovelundPuzzleDesignClass(design)
+                  }
+                });
+
+                this.setState({
+                  puzzles: puzzles,
+                  stage: "MENU",
+                  selectedPuzzleId: puzzles[0].id
+                });
+              })
+          }
+        });
+    }, 2000);
   }
 
-  selectGame = (gameId: string) => {
+  selectPuzzle = (puzzleId: string) => {
     this.setState({
-      selectedGameId: Number(gameId)
+      selectedPuzzleId: Number(puzzleId)
     });
   }
 
   startPuzzle = () => {
     this.setState({
       stage: "PLAY" 
+    });
+  }
+
+  home = () => {
+    this.setState({
+      stage: "MENU",
+      showHelp: false,
+      clueIndex: 0,
+      mode: "SELECT",
+      solutionPasses: undefined,
+      selectedEntityId: undefined
+    });
+  }
+
+  reset = () => {
+    const puzzles = this.state.puzzles;
+
+    if (this.state.selectedPuzzleId !== undefined) {
+      this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design.clearMarkings();
+    }
+
+    this.setState({
+      puzzles: puzzles,
+      solutionPasses: undefined,
+      showHelp: false,
+      selectedEntityId: undefined
     });
   }
 
@@ -106,10 +136,10 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   }
 
   clickSymbol = (featureId: string) => {
-    const games = this.state.games;
+    const puzzles = this.state.puzzles;
 
-    if (this.state.selectedGameId !== undefined) {
-      const design = this.state.games.filter(g => g.id === this.state.selectedGameId)[0].design;
+    if (this.state.selectedPuzzleId !== undefined) {
+      const design = this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design;
 
       if (this.state.selectedEntityId) {
         const entity = design.getEntity(this.state.selectedEntityId);
@@ -125,13 +155,13 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
     }
   
     this.setState({
-      games: games
+      puzzles: puzzles
     });
   }
 
   nextClue = () => {
-    if (this.state.selectedGameId !== undefined) {
-      const design = this.state.games.filter(g => g.id === this.state.selectedGameId)[0].design;
+    if (this.state.selectedPuzzleId !== undefined) {
+      const design = this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design;
 
       const clueIndex = this.state.clueIndex
       const cluesLength = design.getClues().length;
@@ -149,8 +179,8 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   }
 
   prevClue = () => {
-    if (this.state.selectedGameId !== undefined) {
-      const design = this.state.games.filter(g => g.id === this.state.selectedGameId)[0].design;
+    if (this.state.selectedPuzzleId !== undefined) {
+      const design = this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design;
 
       const clueIndex = this.state.clueIndex
       const cluesLength = design.getClues().length;
@@ -168,22 +198,22 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   }
 
   toggleCheckClue = (clueId: string) => {
-    const games = this.state.games;
+    const puzzles = this.state.puzzles;
 
-    if (this.state.selectedGameId !== undefined) {
-      const design = this.state.games.filter(g => g.id === this.state.selectedGameId)[0].design;
+    if (this.state.selectedPuzzleId !== undefined) {
+      const design = this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design;
 
       design.toggleCheckClue(clueId);
     }
 
     this.setState({
-      games: games
+      puzzles: puzzles
     });
   }
 
   checkSolution = () => {
-    if (this.state.selectedGameId !== undefined) {
-      const design = this.state.games.filter(g => g.id === this.state.selectedGameId)[0].design;
+    if (this.state.selectedPuzzleId !== undefined) {
+      const design = this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design;
 
       const solutionPasses = design.checkSolution();
 
@@ -194,12 +224,12 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   }
   
   //checkSolution = () => {
-  //  const game = this.state.game;
+  //  const puzzle = this.state.puzzle;
   //  var solutionPasses = true;
   //
-  //  for (var i = 0; i < game.clues.length; i++) {
+  //  for (var i = 0; i < puzzle.clues.length; i++) {
   //    var cluePasses = true;
-  //    const clue = game.clues[i];
+  //    const clue = puzzle.clues[i];
   //
   //    for (var j = 0; j < clue.rules.length; j++) {
   //      const rule = clue.rules[j];
@@ -209,8 +239,8 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   //        let count = 0;
   //
   //        if (rangeRule.element.type === TovelundElementType.Destination) {
-  //          for (var k = 0; k < game.destinations.length; k++) {
-  //            const destination = game.destinations[k];
+  //          for (var k = 0; k < puzzle.destinations.length; k++) {
+  //            const destination = puzzle.destinations[k];
   //
   //            if (destination.fixedName === rangeRule.element.name || destination.selectedName === rangeRule.element.name) {
   //              count++;
@@ -228,11 +258,11 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   //        const requirementRule = rule as TovelundRelationshipRule;
   //
   //        if (requirementRule.element.type === TovelundElementType.Destination) {
-  //          for (var k = 0; k < game.destinations.length; k++) {
-  //            const destination = game.destinations[k];
+  //          for (var k = 0; k < puzzle.destinations.length; k++) {
+  //            const destination = puzzle.destinations[k];
   //
   //            if (destination.fixedName === requirementRule.element.name || destination.selectedName === requirementRule.element.name) {
-  //              const relationships = game.relationships.filter(r => r.filter(s => s.type === TovelundElementType.Destination && s.id === destination.id).length > 0);
+  //              const relationships = puzzle.relationships.filter(r => r.filter(s => s.type === TovelundElementType.Destination && s.id === destination.id).length > 0);
   //              let match = requirementRule.mode === "INCLUDE" ? false : true;
   //
   //              for (var l = 0; l < relationships.length; l++) {
@@ -252,7 +282,7 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   //
   //                    if (requiredType === relationshipType) {
   //                      if (requiredType === TovelundElementType.Zone) {
-  //                        const zone = game.zones.filter(z => z.id === relationshipId)[0];
+  //                        const zone = puzzle.zones.filter(z => z.id === relationshipId)[0];
   //
   //                        if (zone.name === requiredName) {
   //                          match = requirementRule.mode === "INCLUDE" ? true : false;
@@ -277,7 +307,7 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
   //  }
   //
   //  this.setState({
-  //    game: game,
+  //    puzzle: puzzle,
   //    solutionPasses: solutionPasses
   //  });
   //}
@@ -307,7 +337,7 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
     //    let fill = TovelundColor.Orange;
     //
     //    if (destination.fixedName === symbol.name || destination.selectedName === symbol.name) {
-    //      fill = TovelundColor.White;
+    //      fill = LotographiaColor.White;
     //    } else if (destination.symbolColors[symbol.name]) {
     //      fill = destination.symbolColors[symbol.name];
     //    }
@@ -341,7 +371,7 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
     //    }
     //  }
     //
-    //  descriptions.push(<div className="text" style={{ color: clue.passes === undefined || clue.passes ? TovelundColor.Black : TovelundColor.ReddishPurple }}>
+    //  descriptions.push(<div className="text" style={{ color: clue.passes === undefined || clue.passes ? LotographiaColor.Black : TovelundColor.ReddishPurple }}>
     //    {description}
     //  </div>);
     //}
@@ -352,12 +382,12 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
           <div className="title">Tovelund Puzzles</div>
         </div>
         <div className="component">
-          <div className="emphasis">Receiving puzzles...</div>
+          {StatusLoading}
         </div>
       </div>;
     } else if (this.state.stage === "MENU") {
-      const gameOptions: JSX.Element[] = this.state.games.map((game: {id: number, title: string}) =>
-        <option key={`gameId${game.id}`} value={game.id}>{game.title}</option>
+      const puzzleOptions: JSX.Element[] = this.state.puzzles.map((puzzle: {id: number, title: string}) =>
+        <option key={`puzzleId${puzzle.id}`} value={puzzle.id}>{puzzle.title}</option>
       );
 
       return <div className="section">
@@ -365,37 +395,40 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
           <div className="title">Tovelund Puzzles</div>
         </div>
         <div className="component">
-          <select value={this.state.selectedGameId ? this.state.selectedGameId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectGame(event.currentTarget.value)} style={{ width: "10em" }}>
+          <select value={this.state.selectedPuzzleId ? this.state.selectedPuzzleId : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectPuzzle(event.currentTarget.value)} style={{ width: "10em" }}>
             <option value="NONE" disabled>Choose</option>
-            {gameOptions}
+            {puzzleOptions}
           </select>
         </div>
         <div className="component">
           <div style={{ width: "24em", margin: "auto" }}>
-            {getTovelundMap(this.state.games.filter(g => g.id === this.state.selectedGameId)[0].design, (entityId: string) => { }, [], false)}
+            {getTovelundMap(this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design, (entityId: string) => { }, [], "PREVIEW")}
           </div>
         </div>
         <div className="component buttons">
-          <button className="action" onClick={this.startPuzzle} disabled={this.state.selectedGameId === undefined}>Start Puzzle</button>
+          <button className="action" onClick={this.startPuzzle} disabled={this.state.selectedPuzzleId === undefined}>Start Puzzle</button>
         </div>
       </div>;
     } else {
-      if (this.state.selectedGameId !== undefined) {
-        const design = this.state.games.filter(g => g.id === this.state.selectedGameId)[0].design;
+      if (this.state.selectedPuzzleId !== undefined) {
+        const design = this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design;
 
         const symbolsElement: JSX.Element[] = [];
+
+        let color = "ORANGE";
 
         if (this.state.selectedEntityId !== undefined) {
           const entity = design.getEntity(this.state.selectedEntityId);
           const featureCollection = design.getFeatureCollection(entity.featureCollectionId);
           const featureSet = [...featureCollection.set];
           const symbolMapList = symbolMapLists[featureSet.length - 1];
+          color = featureCollection.color
 
           featureSet.sort((a: { symbol: string }, b: { symbol: string }) => a.symbol > b.symbol ? 1 : -1)
           featureSet.map((feature: { id: string, symbol: string, name: string, type: string }, index: number) => {
             const symbolCoordinates = symbolMapList[index];
 
-            symbolsElement.push(<text key={`feature${feature.id}`} x={symbolCoordinates.x} y={symbolCoordinates.y} onClick={() => this.clickSymbol(feature.id)} style={{ fill: featureCollection.color, cursor: "pointer", fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
+            symbolsElement.push(<text key={`feature${feature.id}`} x={symbolCoordinates.x} y={symbolCoordinates.y} onClick={() => this.clickSymbol(feature.id)} style={{ fill: getColor(color, 3), cursor: "pointer", fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
               {feature.symbol}
             </text>);
           });
@@ -423,43 +456,47 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
           xmlSpace="preserve"
           className="image right"
           style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, overflow: "visible", maxWidth: "100%" }}>
-          <rect x="0" y="0" width={45} height={30} style={{ fill: TovelundColor.White, stroke: TovelundColor.Black, strokeWidth: 0.1875 }} />
-          <text x={43} y={2.5} onClick={this.displayHelp} style={{ fill: TovelundColor.ReddishPurple, fontFamily: "monospace", fontSize: 2, cursor: "pointer" }}>X</text>
+          <rect x="0" y="0" width={45} height={30} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Black, strokeWidth: 0.1875 }} />
+          <text x={43} y={2.5} onClick={this.displayHelp} style={{ fill: LotographiaColor.Violet4, fontFamily: "monospace", fontSize: 2, cursor: "pointer" }}>X</text>
           <g transform={`matrix(1,0,0,1,2,2)`}>
-            <rect x={0} y={0} width={4} height={4} style={{ fill: TovelundColor.White, stroke: TovelundColor.Black, strokeWidth: 0.2 }} />
-            <text x={0.4} y={1.25} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
-            <text x={2.8} y={1.25} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
-            <text x={0.4} y={3.75} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
+            <rect x={0} y={0} width={4} height={4} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+            <text x={0.4} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
+            <text x={2.8} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
+            <text x={0.4} y={3.75} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
           </g>
-          <text x={7} y={3.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 2}}>Use outer pencil markings to</text>
-          <text x={7} y={6} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 2}}>show that a value is limited</text>
-          <text x={7} y={8.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 2}}>to these positions</text>
+          <text x={7} y={3.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 2}}>Use outer pencil markings to</text>
+          <text x={7} y={6} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 2}}>show that a value is limited</text>
+          <text x={7} y={8.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 2}}>to these positions</text>
           <g transform={`matrix(1,0,0,1,2,10.5)`}>
-            <rect x={0} y={0} width={4} height={4} style={{ fill: TovelundColor.White, stroke: TovelundColor.Black, strokeWidth: 0.2 }} />
-            <text x={0.8} y={2.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
-            <text x={1.6} y={2.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
-            <text x={2.4} y={2.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
+            <rect x={0} y={0} width={4} height={4} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+            <text x={0.8} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
+            <text x={1.6} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
+            <text x={2.4} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
           </g>
-          <text x={7} y={12} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 2 }}>Use inner pencil markings to</text>
-          <text x={7} y={14.4} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 2 }}>show that a position is</text>
-          <text x={7} y={17} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 2 }}>limited to these values</text>
+          <text x={7} y={12} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 2 }}>Use inner pencil markings to</text>
+          <text x={7} y={14.4} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 2 }}>show that a position is</text>
+          <text x={7} y={17} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 2 }}>limited to these values</text>
           <g transform={`matrix(1,0,0,1,2,19)`}>
-            <rect x={0} y={0} width={4} height={4} style={{ fill: TovelundColor.White, stroke: TovelundColor.Black, strokeWidth: 0.2 }} />
-            <text x={0.9} y={3.3} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 4, cursor: "pointer" }}>X</text>
+            <rect x={0} y={0} width={4} height={4} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+            <text x={0.9} y={3.3} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 4, cursor: "pointer" }}>X</text>
           </g>
-          <text x={7} y={20.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 2 }}>Use this for your final answer</text>
+          <text x={7} y={20.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 2 }}>Use this for your final answer</text>
         </svg>;
 
         return <div className="section">
           <div className="component">
             <div className="title">Tovelund Puzzles</div>
           </div>
+          <div className="component buttons">
+            <button className="action" onClick={this.home}>Home</button>
+            <button className="action" onClick={this.reset}>Reset</button>
+          </div>
           <div className="component">
-            <div className="subtitle">{this.state.games.filter(g => g.id === this.state.selectedGameId)[0].title}</div>
+            <div className="subtitle">{this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].title}</div>
           </div>
           <div className="component">
             <div style={{ width: "24em", margin: "auto", display: "inline-block" }}>
-              {this.state.showHelp ? help : getTovelundMap(design, this.selectEntityId, selectedElements, false)}
+              {this.state.showHelp ? help : getTovelundMap(design, this.selectEntityId, selectedElements, "SOLVE")}
             </div>
             <div style={{ width: "4em", margin: "1em auto auto 1em", display: "inline-block" }}>
               <svg
@@ -472,29 +509,29 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
                 className="image right"
                 style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, overflow: "visible", maxWidth: "100%" }}>
                 <g onClick={() => this.selectDrawMode("OUTER")}>
-                  <rect x={0} y={0} width={4} height={4} style={{ fill: this.state.mode === "OUTER" ? TovelundColor.Yellow : TovelundColor.White, stroke: TovelundColor.Transparent, cursor: "pointer" }} />
-                  <text x={0.4} y={1.25} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
-                  <text x={2.8} y={1.25} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
-                  <text x={0.4} y={3.75} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
+                  <rect x={0} y={0} width={4} height={4} style={{ fill: this.state.mode === "OUTER" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={0.4} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
+                  <text x={2.8} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
+                  <text x={0.4} y={3.75} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
                 </g>
                 <g onClick={() => this.selectDrawMode("INNER")}>
-                  <rect x={4} y={0} width={4} height={4} style={{ fill: this.state.mode === "INNER" ? TovelundColor.Yellow : TovelundColor.White, stroke: TovelundColor.Transparent, cursor: "pointer" }} />
-                  <text x={4.8} y={2.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
-                  <text x={5.6} y={2.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
-                  <text x={6.4} y={2.5} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
+                  <rect x={4} y={0} width={4} height={4} style={{ fill: this.state.mode === "INNER" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={4.8} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
+                  <text x={5.6} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
+                  <text x={6.4} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
                 </g>
                 <g onClick={() => this.selectDrawMode("SELECT")}>
-                  <rect x={0} y={4} width={4} height={4} style={{ fill: this.state.mode === "SELECT" ? TovelundColor.Yellow : TovelundColor.White, stroke: TovelundColor.Transparent, cursor: "pointer" }} />
-                  <text x={0.9} y={7.3} style={{ fill: TovelundColor.Black, fontFamily: "monospace", fontSize: 4, cursor: "pointer" }}>X</text>
+                  <rect x={0} y={4} width={4} height={4} style={{ fill: this.state.mode === "SELECT" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={0.9} y={7.3} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 4, cursor: "pointer" }}>X</text>
                 </g>
                 <g onClick={() => this.displayHelp()}>
-                  <rect x={4} y={4} width={4} height={4} style={{ fill: TovelundColor.White, stroke: TovelundColor.Transparent, cursor: "pointer" }} />
-                  <text x={4.9} y={7.3} style={{ fill: TovelundColor.ReddishPurple, cursor: "pointer", fontFamily: "monospace", fontSize: 4 }}>?</text>
+                  <rect x={4} y={4} width={4} height={4} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={4.9} y={7.3} style={{ fill: LotographiaColor.Violet4, cursor: "pointer", fontFamily: "monospace", fontSize: 4 }}>?</text>
                 </g>
-                <rect x={0} y={0} width={8} height={24} style={{ fill: TovelundColor.None, stroke: TovelundColor.Black, strokeWidth: 0.2 }} />
-                <path d="M0,4L8,4" style={{ stroke: TovelundColor.Black, strokeWidth: 0.2 }} />
-                <path d="M0,8L8,8" style={{ stroke: TovelundColor.Black, strokeWidth: 0.2 }} />
-                <path d="M4,0L4,8" style={{ stroke: TovelundColor.Black, strokeWidth: 0.2 }} />
+                <rect x={0} y={0} width={8} height={24} style={{ fill: LotographiaColor.None, stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M0,4L8,4" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M0,8L8,8" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M4,0L4,8" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
                 {symbolsElement}
               </svg>
             </div>
@@ -504,7 +541,7 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
             <button className="action" onClick={this.nextClue}>Next Clue</button>
           </div>
           {selectedClue !== undefined && <div className="component">
-            <div className="information" style={{ color: TovelundColor.Black }}>
+            <div className="information" style={{ color: LotographiaColor.Black }}>
               <svg
                 key="TovelundCheck"
                 viewBox={`0 0 1 1`}
@@ -515,11 +552,11 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
                 className="image right"
                 style={{ float: "left", fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, overflow: "visible", maxHeight: "1em", maxWidth: "1em", margin: "0.5em" }}>
                 <g transform={`matrix(0.05,0,0,0.05,0.5,0.5)`} onClick={() => this.toggleCheckClue(selectedClue.id)}>
-                  <rect x={-10} y={-10} width={20} height={20} style={{ fill: TovelundColor.Transparent, stroke: TovelundColor.Black, strokeWidth: 1, cursor: "pointer" }} />
-                  {selectedClue.checked && <path d={'M-7,1 L-2,7 L7,-7'} style={{ fill: TovelundColor.Transparent, stroke: TovelundColor.Black, strokeWidth: 1 }} />}
-                  {selectedClue.passes !== undefined && selectedClue.passes && <path d={'M-7,1 L-2,7 L7,-7'} style={{ fill: TovelundColor.Transparent, stroke: TovelundColor.BluishGreen, strokeWidth: 1 }} />}
-                  {selectedClue.passes !== undefined && !selectedClue.passes && <path d={'M-7,-7 L7,7'} style={{ fill: TovelundColor.Transparent, stroke: TovelundColor.Vermillion, strokeWidth: 1 }} />}
-                  {selectedClue.passes !== undefined && !selectedClue.passes && <path d={'M-7,7 L7,-7'} style={{ fill: TovelundColor.Transparent, stroke: TovelundColor.Vermillion, strokeWidth: 1 }} />}
+                  <rect x={-10} y={-10} width={20} height={20} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Black, strokeWidth: 1, cursor: "pointer" }} />
+                  {selectedClue.checked && <path d={'M-7,1 L-2,7 L7,-7'} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Black, strokeWidth: 1 }} />}
+                  {selectedClue.passes !== undefined && selectedClue.passes && <path d={'M-7,1 L-2,7 L7,-7'} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Green3, strokeWidth: 1 }} />}
+                  {selectedClue.passes !== undefined && !selectedClue.passes && <path d={'M-7,-7 L7,7'} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Purple3, strokeWidth: 1 }} />}
+                  {selectedClue.passes !== undefined && !selectedClue.passes && <path d={'M-7,7 L7,-7'} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Purple3, strokeWidth: 1 }} />}
                 </g>
               </svg>
               {this.state.clueIndex + 1}/{design.getClues().length}: {convertClueDescription(selectedClue.description)}
@@ -529,7 +566,7 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
             <button className="action" onClick={this.checkSolution} disabled={!canCheckSolution}>Check Solution</button>
           </div>
           {this.state.solutionPasses !== undefined && <div className="component">
-            <div className="information">{this.state.solutionPasses ? "Your solution passes! Clearly you are a veteran town planner." : "Your solution fails! Society goes to heck. Negative ten points."}</div>
+            <div className="information">{this.state.solutionPasses ? "Your solution passes! Clearly you are a savvy town planner." : "Your solution fails! Society goes to heck. Negative ten points."}</div>
           </div>}
         </div>;
       }
@@ -539,7 +576,7 @@ export class Tovelund extends React.Component<any, TovelundGameState> {
     //return <div className="section">
     //  <div className="component">
     //    <div style={{ width: "24em", margin: "auto" }}>
-    //      {getTovelundMap(this.state.game, this.state.selectedElementType, this.state.selectedElementId, "NONE", -1, this.selectDestination)}
+    //      {getTovelundMap(this.state.puzzle, this.state.selectedElementType, this.state.selectedElementId, "NONE", -1, this.selectDestination)}
     //    </div>
     //  </div>
     //  <div className="component">

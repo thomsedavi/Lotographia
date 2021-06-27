@@ -65,7 +65,7 @@ const ComponentContainer: React.StatelessComponent<ComponentContainerProps> = (p
         {navigationButtons}
       </div>}
 
-      {props.errorMessage != undefined && <div key="errorMessage" className="component">
+      {props.errorMessage !== undefined && <div key="errorMessage" className="component">
         <div className="error-message">{props.errorMessage}</div>
       </div>}
     </div>

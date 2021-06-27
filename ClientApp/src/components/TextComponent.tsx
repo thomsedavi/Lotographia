@@ -86,7 +86,7 @@ const TextComponent: React.StatelessComponent<TextComponentProps> = (props) => {
 
     if (layer.displayRemainder) {
       for (var j = 0; j < maxHyphens; j++) {
-        hyphen.push(<div style={{ color: i % 2 == 0 ? "#7bf" : "#bdf", display: "inline-block" }} key={`line${i}hyphen${j}`}>_</div>);
+        hyphen.push(<div style={{ color: i % 2 === 0 ? "#7bf" : "#bdf", display: "inline-block" }} key={`line${i}hyphen${j}`}>_</div>);
       }
     }
 
@@ -113,11 +113,11 @@ export const mapToTextComponents = (textElements: TextElement[], substituteTexts
       return "";
   
     if (index > 0 &&
-      text[0] != "," &&
-      text[0] != ":" &&
-      text[0] != ";" &&
-      text[0] != "!" &&
-      text[0] != "?"
+      text[0] !== "," &&
+      text[0] !== ":" &&
+      text[0] !== ";" &&
+      text[0] !== "!" &&
+      text[0] !== "?"
     )
       text = " " + text;
   

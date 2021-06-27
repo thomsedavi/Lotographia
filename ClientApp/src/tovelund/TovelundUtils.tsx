@@ -1,30 +1,22 @@
 ﻿import * as React from "react";
-import { TovelundColor } from "./TovelundEnums";
+import { LotographiaColor } from "../common/Colors";
 
-export const getColor = (colorName: string) => {
+const getColor = (colorName: string) => {
   switch (colorName.toLowerCase()) {
-    case 'black':
-      return TovelundColor.Black;
     case 'blue':
-      return TovelundColor.Blue;
-    case 'bluish-green':
-      return TovelundColor.BluishGreen;
+      return LotographiaColor.Blue3;
+    case 'green':
+      return LotographiaColor.Green3;
+    case 'violet':
+      return LotographiaColor.Violet3;
+    case 'purple':
+      return LotographiaColor.Purple3;
     case 'orange':
-      return TovelundColor.Orange;
-    case 'reddish-purple':
-      return TovelundColor.ReddishPurple;
-    case 'sky-blue':
-      return TovelundColor.SkyBlue;
-    case 'transparent':
-      return TovelundColor.Transparent;
-    case 'vermillion':
-      return TovelundColor.Vermillion;
-    case 'white':
-      return TovelundColor.White;
-    case 'yellow':
-      return TovelundColor.Yellow;
+      return LotographiaColor.Orange3;
+    case 'lime':
+      return LotographiaColor.Lime3;
     default:
-      return colorName;
+      return LotographiaColor.Error;
   }
 }
 
@@ -32,7 +24,7 @@ export const getIcon = (iconName: string, scale: number, pointIsSelected: boolea
   switch (iconName.toLowerCase()) {
     case 'mountain':
       return <>
-        <path d={'M-9,4.5L0,-4.5L9,4.5'} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Blue, strokeWidth: 0.005 * scale }} />
+        <path d={'M-9,4.5L0,-4.5L9,4.5'} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
       </>;
     default:
       return <>

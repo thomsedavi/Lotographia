@@ -543,8 +543,8 @@ export class PaperFollies extends React.Component<any, PaperFolliesState> {
 
   changeGameType = (gameType: string) => {
     const game = this.state.game;
-    game.attributes.canSeePrecedingContent = gameType != GameType.Following;
-    game.attributes.canSeeFollowingContent = gameType != GameType.Preceding;
+    game.attributes.canSeePrecedingContent = gameType !== GameType.Following;
+    game.attributes.canSeeFollowingContent = gameType !== GameType.Preceding;
 
     this.setState({
       game: game

@@ -1,6 +1,6 @@
 ﻿namespace Lotographia.Models
 {
-    public class TovelundGame
+    public class TovelundPuzzle
     {
         public long Id { get; set; }
         public string Title { get; set; }

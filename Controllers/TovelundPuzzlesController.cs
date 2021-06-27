@@ -10,34 +10,39 @@ namespace Lotographia.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TovelundController : ControllerBase
+    public class TovelundPuzzlesController : ControllerBase
     {
         private readonly LotographiaContext _context;
 
-        public TovelundController(LotographiaContext context)
+        public TovelundPuzzlesController(LotographiaContext context)
         {
             _context = context;
         }
 
         // POST api/<LexicologerController>
         [HttpPost]
-        public async Task<IActionResult> Post(CreateTovelundGameRequest request)
+        public async Task<IActionResult> Post(CreateTovelundPuzzleRequest request)
         {
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { title = "Oh no it broke for some reason" });
+            }
+
             try
             {
-                var game = new TovelundGame
+                var puzzle = new TovelundPuzzle
                 {
                     Title = request.Title,
                     Design = request.Design
                 };
 
-                _context.Add(game);
+                _context.Add(puzzle);
 
                 await _context.SaveChangesAsync();
 
                 return StatusCode(StatusCodes.Status200OK, new
                 {
-                    GameId = game.Id
+                    PuzzleId = puzzle.Id
                 });
             }
             catch (Exception exception)
@@ -48,19 +53,24 @@ namespace Lotographia.Controllers
 
         // POST api/<LexicologerController>/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(long id, CreateTovelundGameRequest request)
+        public async Task<IActionResult> Put(long id, CreateTovelundPuzzleRequest request)
         {
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { title = "Oh no it broke for some reason" });
+            }
+
             try
             {
-                var game = await _context.TovelundGames.FindAsync(id);
+                var puzzle = await _context.TovelundPuzzles.FindAsync(id);
 
-                if (game == null)
+                if (puzzle == null)
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "game not found" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "puzzle not found" });
                 }
 
-                game.Design = request.Design;
-                game.Title = request.Title;
+                puzzle.Design = request.Design;
+                puzzle.Title = request.Title;
 
                 await _context.SaveChangesAsync();
 
@@ -80,7 +90,7 @@ namespace Lotographia.Controllers
             {
                 return StatusCode(StatusCodes.Status200OK, new
                 {
-                    Games = _context.TovelundGames.Select(g => new { g.Id, g.Title })
+                    Puzzles = _context.TovelundPuzzles.Select(g => new { g.Id, g.Title, g.Design })
                 });
             }
             catch (Exception exception)
@@ -95,14 +105,14 @@ namespace Lotographia.Controllers
         {
             try
             {
-                var game = await _context.TovelundGames.FindAsync(id);
+                var puzzle = await _context.TovelundPuzzles.FindAsync(id);
 
-                if (game == null)
+                if (puzzle == null)
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "game not found" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { title = "puzzle not found" });
                 }
 
-                return StatusCode(StatusCodes.Status200OK, game.Design);
+                return StatusCode(StatusCodes.Status200OK, puzzle.Design);
             }
             catch (Exception exception)
             {
@@ -111,7 +121,7 @@ namespace Lotographia.Controllers
         }
     }
 
-    public class CreateTovelundGameRequest
+    public class CreateTovelundPuzzleRequest
     {
         public string Title { get; set; }
         public string Design { get; set; }

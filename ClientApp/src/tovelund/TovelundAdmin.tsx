@@ -1,8 +1,9 @@
 ﻿import * as React from "react";
-import { TovelundEntity, TovelundGame, TovelundFeatureType, TovelundColor, TovelundElementType, TovelundSequenceRule, TovelundFeatureCollection, TovelundEntityGroup, TovelundRelationshipRule, TovelundQuantityRule, TovelundDistanceRule } from "./TovelundEnums";
-import { TovelundGameClass } from "./TovelundGameClass";
+import { TovelundEntity, TovelundPuzzleDesign, TovelundFeatureType, TovelundElementType, TovelundSequenceRule, TovelundFeatureCollection, TovelundEntityGroup, TovelundRelationshipRule, TovelundQuantityRule, TovelundDistanceRule } from "./TovelundEnums";
+import { TovelundPuzzleDesignClass } from "./TovelundPuzzleDesignClass";
 import { getTovelundMap } from "./TovelundMap";
 import { convertClueDescription } from "./TovelundUtils";
+import { LotographiaColor } from "../common/Colors";
 
 interface ErrorData {
   title: string
@@ -10,11 +11,11 @@ interface ErrorData {
 
 interface TovelundAdminState {
   mode: string,
-  selectedGameId: number,
-  games: { id: number, title: string }[],
-  gameId?: number,
-  gameTitle: string,
-  game: TovelundGameClass,
+  selectedPuzzleId: number,
+  puzzles: { id: number, title: string }[],
+  puzzleId?: number,
+  puzzleTitle: string,
+  puzzle: TovelundPuzzleDesignClass,
   elementSymbol: string,
   elementName: string,
   selectedEntityId?: string,
@@ -44,10 +45,10 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
     this.state = {
       mode: "LAYERS",
-      selectedGameId: -1,
-      games: [],
-      gameTitle: "Duck Island",
-      game: new TovelundGameClass(),
+      selectedPuzzleId: -1,
+      puzzles: [],
+      puzzleTitle: "Duck Island",
+      puzzle: new TovelundPuzzleDesignClass(),
       elementSymbol: "",
       elementName: "NONE",
       fetchingData: false,
@@ -60,7 +61,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   componentDidMount = () => {
-    fetch("api/tovelund", {
+    fetch("api/tovelundpuzzles", {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
@@ -69,9 +70,9 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       .then((response: Response) => {
         if (response.status === 200) {
           response.json()
-            .then((data: { games: { id: number, title: string }[] }) => {
+            .then((data: { puzzles: { id: number, title: string }[] }) => {
               this.setState({
-                games: data.games
+                puzzles: data.puzzles
               });
             })
         }
@@ -86,18 +87,18 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   changeTitle = (title: string) => {
     this.setState({
-      gameTitle: title
+      puzzleTitle: title
     });
   }
 
-  selectGame = (gameId: string) => {
+  selectPuzzle = (puzzleId: string) => {
     this.setState({
-      selectedGameId: Number(gameId)
+      selectedPuzzleId: Number(puzzleId)
     });
   }
 
-  loadGame = () => {
-    fetch(`api/tovelund/${this.state.selectedGameId}`, {
+  loadPuzzle = () => {
+    fetch(`api/tovelundpuzzles/${this.state.selectedPuzzleId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
@@ -106,11 +107,11 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       .then((response: Response) => {
         if (response.status === 200) {
           response.json()
-            .then((game: TovelundGame) => {
+            .then((puzzle: TovelundPuzzleDesign) => {
               this.setState({
-                gameTitle: this.state.games.filter(g => g.id === this.state.selectedGameId)[0].title,
-                game: new TovelundGameClass(game),
-                gameId: this.state.selectedGameId,
+                puzzleTitle: this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].title,
+                puzzle: new TovelundPuzzleDesignClass(puzzle),
+                puzzleId: this.state.selectedPuzzleId,
                 selectedEntityId: undefined,
                 selectedElementType: undefined,
                 selectedElementId: undefined,
@@ -126,12 +127,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   addEntity = () => {
     if (this.state.selectedFeatureCollectionId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      const entityId = game.addEntity(this.state.selectedFeatureCollectionId);
+      const entityId = puzzle.addEntity(this.state.selectedFeatureCollectionId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedEntityId: entityId,
         selectedElementType: undefined,
         selectedElementId: undefined
@@ -149,12 +150,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   setEntityFeatureCollection = (featureCollectionId: string) => {
     if (this.state.selectedEntityId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      game.setEntityFeatureCollectionId(this.state.selectedEntityId, featureCollectionId);
+      puzzle.setEntityFeatureCollectionId(this.state.selectedEntityId, featureCollectionId);
 
       this.setState({
-        game: game
+        puzzle: puzzle
       });
     }
   }
@@ -162,24 +163,24 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   selectEntityFeatureId = (featureId: string) => {
     if (this.state.selectedEntityId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      game.setEntityFixedFeatureId(this.state.selectedEntityId, featureId === "NONE" ? undefined : featureId);
+      puzzle.setEntityFixedFeatureId(this.state.selectedEntityId, featureId === "NONE" ? undefined : featureId);
 
       this.setState({
-        game: game
+        puzzle: puzzle
       });
     }
   }
 
   addRectangle = () => {
     if (this.state.selectedEntityId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      const rectangleId = game.addRectangle(this.state.selectedEntityId);
+      const rectangleId = puzzle.addRectangle(this.state.selectedEntityId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedElementType: TovelundElementType.Rectangle,
         selectedElementId: rectangleId
       });
@@ -188,12 +189,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   addPoint = () => {
     if (this.state.selectedEntityId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      const pointId = game.addPoint(this.state.selectedEntityId);
+      const pointId = puzzle.addPoint(this.state.selectedEntityId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedElementType: TovelundElementType.Point,
         selectedElementId: pointId
       });
@@ -202,12 +203,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   addLine = () => {
     if (this.state.selectedEntityId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      const lineId = game.addLine(this.state.selectedEntityId);
+      const lineId = puzzle.addLine(this.state.selectedEntityId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedElementType: TovelundElementType.Line,
         selectedElementId: lineId
       });
@@ -216,12 +217,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   addVertex = () => {
     if (this.state.selectedElementId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      const vertexId = game.addVertex(this.state.selectedElementId);
+      const vertexId = puzzle.addVertex(this.state.selectedElementId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedElementType: TovelundElementType.Vertex,
         selectedElementId: vertexId
       });
@@ -229,24 +230,24 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   addEntityGroupType = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
-    const entityGroupTypeId = game.addEntityGroupType();
+    const entityGroupTypeId = puzzle.addEntityGroupType();
 
     this.setState({
-      game: game,
+      puzzle: puzzle,
       selectedEntityGroupTypeId: entityGroupTypeId
     });
   }
 
   addEntityGroup = () => {
     if (this.state.selectedEntityGroupTypeId !== undefined) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      const entityGroupId = game.addEntityGroup(this.state.selectedEntityGroupTypeId);
+      const entityGroupId = puzzle.addEntityGroup(this.state.selectedEntityGroupTypeId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedEntityGroupId: entityGroupId
       });
     }
@@ -254,12 +255,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   deleteEntityGroup = () => {
     if (this.state.selectedEntityGroupId !== undefined) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      game.deleteEntityGroup(this.state.selectedEntityGroupId);
+      puzzle.deleteEntityGroup(this.state.selectedEntityGroupId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedEntityGroupId: undefined
       });
     }
@@ -268,59 +269,72 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   addEntityToGroup = () => {
     if (this.state.selectedEntityGroupId) {
       if (this.state.selectedEntityId) {
-        const game = this.state.game;
+        const puzzle = this.state.puzzle;
 
-        game.addEntityToGroup(this.state.selectedEntityGroupId, this.state.selectedEntityId);
+        puzzle.addEntityToGroup(this.state.selectedEntityGroupId, this.state.selectedEntityId);
 
         this.setState({
-          game: game
+          puzzle: puzzle
         });
       }
     }
   }
 
   addFeatureCollection = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
-    const featureCollectionId = game.addFeatureCollection();
+    const featureCollectionId = puzzle.addFeatureCollection();
 
     this.setState({
-      game: game,
+      puzzle: puzzle,
       selectedFeatureCollectionId: featureCollectionId
     });
   }
 
   addFeature = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedFeatureCollectionId) {
       if (this.state.selectedAvailableFeatureType) {
         if (this.state.selectedAvailableFeatureSymbol) {
           if (this.state.selectedAvailableFeatureName) {
-            game.addFeature(this.state.selectedFeatureCollectionId, this.state.selectedAvailableFeatureType, this.state.selectedAvailableFeatureName, this.state.selectedAvailableFeatureSymbol);
+            puzzle.addFeature(this.state.selectedFeatureCollectionId, this.state.selectedAvailableFeatureType, this.state.selectedAvailableFeatureName, this.state.selectedAvailableFeatureSymbol);
           }
         }
       }
     }
 
     this.setState({
-      game: game,
+      puzzle: puzzle,
       selectedAvailableFeatureType: undefined,
       selectedAvailableFeatureName: undefined,
       selectedAvailableFeatureSymbol: undefined
     });
   }
 
+  deleteFeature = () => {
+    if (this.state.selectedFeatureId !== undefined) {
+      const puzzle = this.state.puzzle;
+
+      puzzle.deleteFeature(this.state.selectedFeatureId);
+
+      this.setState({
+        puzzle: puzzle,
+        selectedFeatureId: undefined,
+      });
+    }
+  }
+
   delete = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedElementId !== undefined) {
       if (this.state.selectedElementType === TovelundElementType.Point) {
-        game.deletePoint(this.state.selectedElementId);
+        puzzle.deletePoint(this.state.selectedElementId);
       }
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedElementId: undefined,
         selectedElementType: undefined
       });
@@ -328,10 +342,10 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     } else if (this.state.selectedEntityId !== undefined) {
       console.log('here');
 
-      game.deleteEntity(this.state.selectedEntityId);
+      puzzle.deleteEntity(this.state.selectedEntityId);
 
       this.setState({
-        game: game,
+        puzzle: puzzle,
         selectedEntityId: undefined
       });
     }
@@ -358,12 +372,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   selectFeatureCollectionColor = (color: string) => {
     if (this.state.selectedFeatureCollectionId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      game.setFeatureCollectionColor(this.state.selectedFeatureCollectionId, color);
+      puzzle.setFeatureCollectionColor(this.state.selectedFeatureCollectionId, color);
 
       this.setState({
-        game: game
+        puzzle: puzzle
       });
     }
   }
@@ -394,12 +408,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
 
   changeFeatureCollectionName = (name: string) => {
     if (this.state.selectedFeatureCollectionId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
-      game.changeFeatureCollectionName(this.state.selectedFeatureCollectionId, name);
+      puzzle.changeFeatureCollectionName(this.state.selectedFeatureCollectionId, name);
 
       this.setState({
-        game: game
+        puzzle: puzzle
       });
     }
   }
@@ -426,47 +440,47 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   selectElementShape = (shape: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedElementId) {
       if (this.state.selectedElementType === TovelundElementType.Rectangle) {
-        game.setRectangleAttribute(this.state.selectedElementId, "Orientation", shape);
+        puzzle.setRectangleAttribute(this.state.selectedElementId, "Orientation", shape);
       } else if (this.state.selectedElementType === TovelundElementType.Point) {
-        game.setPointAttribute(this.state.selectedElementId, "Size", shape);
+        puzzle.setPointAttribute(this.state.selectedElementId, "Size", shape);
       } else if (this.state.selectedElementType === TovelundElementType.Line) {
         const shapes = shape.split("_");
 
-        game.setLineAttribute(this.state.selectedElementId, "IsClosed", shapes[0] === "CLOSED");
-        game.setLineAttribute(this.state.selectedElementId, "IsBorder", shapes[1] === "BORDER");
+        puzzle.setLineAttribute(this.state.selectedElementId, "IsClosed", shapes[0] === "CLOSED");
+        puzzle.setLineAttribute(this.state.selectedElementId, "IsBorder", shapes[1] === "BORDER");
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   changeEntityName = (name: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedEntityId) {
-      game.changeEntityName(this.state.selectedEntityId, name);
+      puzzle.changeEntityName(this.state.selectedEntityId, name);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   changeX = (x: string) => {
     if (this.state.selectedElementType !== undefined) {
       if (this.state.selectedElementId !== undefined) {
-        const game = this.state.game;
+        const puzzle = this.state.puzzle;
       
-        game.changeX(this.state.selectedElementType, this.state.selectedElementId, Number(x));
+        puzzle.changeX(this.state.selectedElementType, this.state.selectedElementId, Number(x));
       
         this.setState({
-          game: game
+          puzzle: puzzle
         });
       }
     }
@@ -475,12 +489,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   changeY = (y: string) => {
     if (this.state.selectedElementType !== undefined) {
       if (this.state.selectedElementId !== undefined) {
-        const game = this.state.game;
+        const puzzle = this.state.puzzle;
       
-        game.changeY(this.state.selectedElementType, this.state.selectedElementId, Number(y));
+        puzzle.changeY(this.state.selectedElementType, this.state.selectedElementId, Number(y));
       
         this.setState({
-          game: game
+          puzzle: puzzle
         });
       }
     }
@@ -493,48 +507,48 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   addClue = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
-    const clueId = game.addClue();
+    const clueId = puzzle.addClue();
 
     this.setState({
-      game: game,
+      puzzle: puzzle,
       selectedClueId: clueId
     });
   }
 
   deleteClue = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedClueId !== undefined) {
-      game.deleteClue(this.state.selectedClueId);
+      puzzle.deleteClue(this.state.selectedClueId);
     }
 
     this.setState({
-      game: game,
+      puzzle: puzzle,
       selectedClueId: undefined
     });
   }
 
   addRule = () => {
     if (this.state.selectedClueId) {
-      const game = this.state.game;
+      const puzzle = this.state.puzzle;
 
       let ruleId: string | undefined;
 
       if (this.state.selectedRuleType === "RELATIONSHIP") {
-        ruleId = game.addRelationshipRule(this.state.selectedClueId);
+        ruleId = puzzle.addRelationshipRule(this.state.selectedClueId);
       } else if (this.state.selectedRuleType === "QUANTITY") {
-        ruleId = game.addQuantityRule(this.state.selectedClueId);
+        ruleId = puzzle.addQuantityRule(this.state.selectedClueId);
       } else if (this.state.selectedRuleType === "DISTANCE") {
-        ruleId = game.addDistanceRule(this.state.selectedClueId);
+        ruleId = puzzle.addDistanceRule(this.state.selectedClueId);
       } else if (this.state.selectedRuleType === "SEQUENCE") {
-        ruleId = game.addSequenceRule(this.state.selectedClueId);
+        ruleId = puzzle.addSequenceRule(this.state.selectedClueId);
       }
 
       if (ruleId !== undefined) {
         this.setState({
-          game: game,
+          puzzle: puzzle,
           selectedRuleId: ruleId
         });
       } else {
@@ -544,14 +558,14 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   deleteRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
-      game.deleteRule(this.state.selectedRuleId);
+      puzzle.deleteRule(this.state.selectedRuleId);
     }
 
     this.setState({
-      game: game,
+      puzzle: puzzle,
       selectedRuleId: undefined
     });
   }
@@ -564,43 +578,43 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   changeClueDescription = (description: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedClueId !== undefined) {
-      game.changeClueDescription(this.state.selectedClueId, description);
+      puzzle.changeClueDescription(this.state.selectedClueId, description);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   moveClueUp = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedClueId !== undefined) {
-      game.moveClueUp(this.state.selectedClueId);
+      puzzle.moveClueUp(this.state.selectedClueId);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   moveEntityUp = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedEntityId !== undefined) {
-      game.moveEntityUp(this.state.selectedEntityId);
+      puzzle.moveEntityUp(this.state.selectedEntityId);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   selectRuleId = (ruleId: string) => {
-    const rule = this.state.game.getRule(ruleId);
+    const rule = this.state.puzzle.getRule(ruleId);
 
     if (rule.type === "QUANTITY") {
       const quantityRule = rule as TovelundQuantityRule;
@@ -618,73 +632,87 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   selectRelationshipRuleMode = (mode: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
-      game.setRelationshipRuleMode(this.state.selectedRuleId, mode);
+      puzzle.setRelationshipRuleMode(this.state.selectedRuleId, mode);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   selectRelationshipRuleLogic = (logic: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
-      game.setRelationshipRuleLogic(this.state.selectedRuleId, logic);
+      puzzle.setRelationshipRuleLogic(this.state.selectedRuleId, logic);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   addFeatureStartToRelationshipRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       if (this.state.selectedFeatureId !== undefined) {
-        game.addFeatureStartToRelationshipRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+        puzzle.addFeatureStartToRelationshipRule(this.state.selectedRuleId, this.state.selectedFeatureId);
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   addFeatureEndToRelationshipRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       if (this.state.selectedFeatureId !== undefined) {
-        game.addFeatureEndToRelationshipRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+        puzzle.addFeatureEndToRelationshipRule(this.state.selectedRuleId, this.state.selectedFeatureId);
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
+    });
+  }
+
+  addGroupTypeToRelationshipRule = () => {
+    const puzzle = this.state.puzzle;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedEntityGroupTypeId !== undefined) {
+        puzzle.addGroupTypeToRelationshipRule(this.state.selectedRuleId, this.state.selectedEntityGroupTypeId);
+      }
+    }
+
+    this.setState({
+      puzzle: puzzle
     });
   }
 
   addFeatureToQuantityRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       if (this.state.selectedFeatureId !== undefined) {
-        game.addFeatureToQuantityRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+        puzzle.addFeatureToQuantityRule(this.state.selectedRuleId, this.state.selectedFeatureId);
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   changeQuantitiesOfQuantityRule = (quantitiesString: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       const quantitiesSplit = quantitiesString.split(",");
@@ -698,102 +726,102 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         }
       });
 
-      game.changeQuantitiesOfQuantityRule(this.state.selectedRuleId, quantities.sort());
+      puzzle.changeQuantitiesOfQuantityRule(this.state.selectedRuleId, quantities.sort());
     }
 
     this.setState({
-      game: game,
+      puzzle: puzzle,
       quantitiesString: quantitiesString
     });
   }
 
   selectDistanceRuleMode = (mode: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
-      game.setDistanceRuleMode(this.state.selectedRuleId, mode);
+      puzzle.setDistanceRuleMode(this.state.selectedRuleId, mode);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   addFeatureStartToDistanceRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       if (this.state.selectedFeatureId !== undefined) {
-        game.addFeatureStartToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+        puzzle.addFeatureStartToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   addFeatureMiddleToDistanceRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       if (this.state.selectedFeatureId !== undefined) {
-        game.addFeatureMiddleToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+        puzzle.addFeatureMiddleToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   addFeatureEndToDistanceRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       if (this.state.selectedFeatureId !== undefined) {
-        game.addFeatureEndToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
+        puzzle.addFeatureEndToDistanceRule(this.state.selectedRuleId, this.state.selectedFeatureId);
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   selectSequenceRuleMode = (mode: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
-      game.setSequenceRuleMode(this.state.selectedRuleId, mode);
+      puzzle.setSequenceRuleMode(this.state.selectedRuleId, mode);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   selectSequenceCanRevisit = (canRevisit: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
-      game.setSequenceCanRevisit(this.state.selectedRuleId, canRevisit === "CANREVISIT");
+      puzzle.setSequenceCanRevisit(this.state.selectedRuleId, canRevisit === "CANREVISIT");
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   addIndexToSequenceRule = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
-      game.addIndexToSequenceRule(this.state.selectedRuleId);
+      puzzle.addIndexToSequenceRule(this.state.selectedRuleId);
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
@@ -806,63 +834,69 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
   }
 
   addFeatureToSequenceAtIndex = () => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
     if (this.state.selectedRuleId !== undefined) {
       if (this.state.selectedFeatureId !== undefined) {
         if (this.state.selectedSequenceIndex !== undefined) {
-          game.addFeatureToSequenceAtIndex(this.state.selectedRuleId, this.state.selectedSequenceIndex, this.state.selectedFeatureId);
+          puzzle.addFeatureToSequenceAtIndex(this.state.selectedRuleId, this.state.selectedSequenceIndex, this.state.selectedFeatureId);
         }
       }
     }
 
     this.setState({
-      game: game
+      puzzle: puzzle
     });
   }
 
   changeScale = (scale: string) => {
-    const game = this.state.game;
+    const puzzle = this.state.puzzle;
 
-    game.setScale(Number(scale));
+    puzzle.setScale(Number(scale));
 
     this.setState({
-      game: game
+      puzzle: puzzle
+    });
+  }
+
+  countSolutions2 = () => {
+    const puzzle = this.state.puzzle;
+
+    const solutionCount = puzzle.countSolutions();
+
+    this.setState({
+      solutionCount: solutionCount,
+      puzzle: puzzle
     });
   }
 
   countSolutions = () => {
-    const game = this.state.game;
-
-    const solutionCount = game.countSolutions();
-
     this.setState({
-      solutionCount: solutionCount,
-      game: game
-    });
+      solutionCount: -1
+    }, () => { setTimeout(this.countSolutions2, 1000) });
   }
 
-  saveGame = () => {
-    const game: TovelundGameClass = { ...this.state.game };
+  savePuzzle = () => {
+    const puzzle: TovelundPuzzleDesignClass = { ...this.state.puzzle };
 
-    game.clearMarkings();
+    puzzle.clearMarkings();
 
-    if (this.state.gameId) {
-      fetch(`api/tovelund/${this.state.gameId}`, {
+    if (this.state.puzzleId) {
+      fetch(`api/tovelundpuzzles/${this.state.puzzleId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ "Title": this.state.gameTitle, "Design": game.getJSON() })
+        body: JSON.stringify({ "Title": this.state.puzzleTitle, "Design": puzzle.getJSON() })
       })
         .then(response => { console.log(response) });
     } else {
-      fetch("api/tovelund", {
+      fetch("api/tovelundpuzzles", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ "Title": this.state.gameTitle, "Design": game.getJSON() })
+        body: JSON.stringify({ "Title": this.state.puzzleTitle, "Design": puzzle.getJSON() })
       })
         .then(response => { console.log(response) });
     }
@@ -876,7 +910,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     let selectedShape: any = undefined;
 
     if (this.state.selectedElementType === TovelundElementType.Rectangle && this.state.selectedElementId) {
-      const rectangle = this.state.game.getRectangle(this.state.selectedElementId);
+      const rectangle = this.state.puzzle.getRectangle(this.state.selectedElementId);
 
       if (rectangle) {
         x = rectangle.x;
@@ -888,7 +922,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         selectedShape = rectangle.attributes["Orientation"];
       }
     } else if (this.state.selectedElementType === TovelundElementType.Point && this.state.selectedElementId) {
-      const point = this.state.game.getPoint(this.state.selectedElementId);
+      const point = this.state.puzzle.getPoint(this.state.selectedElementId);
 
       if (point) {
         x = point.x;
@@ -901,7 +935,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         selectedShape = point.attributes["Size"];
       }
     } else if (this.state.selectedElementType === TovelundElementType.Line && this.state.selectedElementId) {
-      const line = this.state.game.getLine(this.state.selectedElementId);
+      const line = this.state.puzzle.getLine(this.state.selectedElementId);
 
       if (line) {
         x = line.vertices[0].x;
@@ -915,7 +949,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         selectedShape = `${line.attributes["IsClosed"] ? "CLOSED" : "OPEN"}_${line.attributes["IsBorder"] ? "BORDER" : "NOTBORDER"}`;
       }
     } else if (this.state.selectedElementType === TovelundElementType.Vertex && this.state.selectedElementId) {
-      const vertex = this.state.game.getVertex(this.state.selectedElementId);
+      const vertex = this.state.puzzle.getVertex(this.state.selectedElementId);
 
       if (vertex) {
         x = vertex.x;
@@ -923,23 +957,23 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       }
     }
 
-    const entityElements = this.state.game.getEntities().map((entity: TovelundEntity, index: number) => <option key={`entityOption${entity.id}`} value={entity.id}>
+    const entityElements = this.state.puzzle.getEntities().map((entity: TovelundEntity, index: number) => <option key={`entityOption${entity.id}`} value={entity.id}>
       {entity.name}
     </option>);
 
-    let entityGroupElements: JSX.Element[] = this.state.game.getEntityGroups().map((group: TovelundEntityGroup) => <option key={`entityGroup${group.id}`} value={group.id}>
+    let entityGroupElements: JSX.Element[] = this.state.puzzle.getEntityGroups().map((group: TovelundEntityGroup) => <option key={`entityGroup${group.id}`} value={group.id}>
       {group.id}: {group.entityGroupTypeId}
     </option>);
 
-    let entityGroupTypeElements: JSX.Element[] = this.state.game.getEntityGroupTypes().map((groupType: { id: string, name: string }) => <option key={`entityGroupType${groupType.id}`} value={groupType.id}>
+    let entityGroupTypeElements: JSX.Element[] = this.state.puzzle.getEntityGroupTypes().map((groupType: { id: string, name: string }) => <option key={`entityGroupType${groupType.id}`} value={groupType.id}>
       {groupType.id}: {groupType.name}
     </option>);
 
     let groupEntityElements: JSX.Element[] = [];
 
     if (this.state.selectedEntityGroupId) {
-      groupEntityElements = this.state.game.getEntityGroup(this.state.selectedEntityGroupId).entityIds.map((entityId: string) => <div key={`groupEntity${entityId}`}>
-        {this.state.game.getEntity(entityId).name}
+      groupEntityElements = this.state.puzzle.getEntityGroup(this.state.selectedEntityGroupId).entityIds.map((entityId: string) => <div key={`groupEntity${entityId}`}>
+        {this.state.puzzle.getEntity(entityId).name}
       </div>);
     }
 
@@ -950,9 +984,9 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         NONE
       </option>);
 
-      const entity = this.state.game.getEntity(this.state.selectedEntityId);
+      const entity = this.state.puzzle.getEntity(this.state.selectedEntityId);
 
-      const featureCollection = this.state.game.getFeatureCollection(entity.featureCollectionId);
+      const featureCollection = this.state.puzzle.getFeatureCollection(entity.featureCollectionId);
 
       featureCollection.set.map((feature: { id: string, type: string, name: string }) => {
         entityFeatureElements.push(<option key={`entityId${feature.id}`} value={feature.id}>
@@ -961,7 +995,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       });
     }
 
-    const featureCollectionElements = this.state.game.getFeatureCollections().map((collection: TovelundFeatureCollection) => <option key={`symbolOption${collection.id}`} value={collection.id}>
+    const featureCollectionElements = this.state.puzzle.getFeatureCollections().map((collection: TovelundFeatureCollection) => <option key={`symbolOption${collection.id}`} value={collection.id}>
       {collection.name}
     </option>);
 
@@ -969,7 +1003,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     const collectionFeatureElements: JSX.Element[] = [];
 
     if (this.state.selectedFeatureCollectionId) {
-      const featureCollection = this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId);
+      const featureCollection = this.state.puzzle.getFeatureCollection(this.state.selectedFeatureCollectionId);
 
       featureCollection.set.map((feature: { id: string, name: string, symbol: string }, index: number) => {
         collectionFeatureElements.push(<option key={`featureName${index}`} value={feature.id}>
@@ -977,25 +1011,38 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         </option>);
       });
 
-      Object.values(TovelundColor).map((color: string) => {
-        featureCollectionColorElements.push(<option key={`featureColor${color}`} value={color} style={{ backgroundColor: color }}>
-          {color}
-        </option>);
-      });
+      featureCollectionColorElements.push(<option key={`featureColorOrange`} value="ORANGE" style={{ backgroundColor: LotographiaColor.Orange5 }}>
+        Orange
+      </option>);
+      featureCollectionColorElements.push(<option key={`featureColorPurple`} value="PURPLE" style={{ backgroundColor: LotographiaColor.Purple5 }}>
+        Purple
+      </option>);
+      featureCollectionColorElements.push(<option key={`featureColorViolet`} value="VIOLET" style={{ backgroundColor: LotographiaColor.Violet5 }}>
+        Violet
+      </option>);
+      featureCollectionColorElements.push(<option key={`featureColorBlue`} value="BLUE" style={{ backgroundColor: LotographiaColor.Blue5 }}>
+        Blue
+      </option>);
+      featureCollectionColorElements.push(<option key={`featureColorGreen`} value="GREEN" style={{ backgroundColor: LotographiaColor.Green5 }}>
+        Green
+      </option>);
+      featureCollectionColorElements.push(<option key={`featureColorLime`} value="LIME" style={{ backgroundColor: LotographiaColor.Lime5 }}>
+        Lime
+      </option>);
     }
 
     const availableFeatureTypeElements = Object.values(TovelundFeatureType).map((type: string) => <option key={`entityType_${type}`} value={type}>
       {type}
     </option>);
 
-    const availableFeatureSymbolElements = this.state.game.getAvailableFeatureSymbols().map((featureSymbol: string) => <option key={`entitySybmol_${featureSymbol}`} value={featureSymbol}>
+    const availableFeatureSymbolElements = this.state.puzzle.getAvailableFeatureSymbols().map((featureSymbol: string) => <option key={`entitySybmol_${featureSymbol}`} value={featureSymbol}>
       {featureSymbol}
     </option>)
 
     const elementElements: JSX.Element[] = [];
 
     if (this.state.selectedEntityId) {
-      const entity = this.state.game.getEntity(this.state.selectedEntityId);
+      const entity = this.state.puzzle.getEntity(this.state.selectedEntityId);
 
       if (entity.rectangle) {
         elementElements.push(<option key={`rectangle${entity.rectangle.id}`} value={`${TovelundElementType.Rectangle}_${entity.rectangle.id}`}>
@@ -1022,18 +1069,18 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       });
     }
 
-    const gameOptions: JSX.Element[] = this.state.games.map((game: { id: number, title: string }) =>
-      <option key={`gameId${game.id}`} value={game.id}>{game.title}</option>
+    const puzzleOptions: JSX.Element[] = this.state.puzzles.map((puzzle: { id: number, title: string }) =>
+      <option key={`puzzleId${puzzle.id}`} value={puzzle.id}>{puzzle.title}</option>
     );
 
-    const clueElements: JSX.Element[] = this.state.game.getClues().map((clue: { id: string, description: string }, index: number) => <option key={`clue${clue.id}`} value={clue.id}>
+    const clueElements: JSX.Element[] = this.state.puzzle.getClues().map((clue: { id: string, description: string }, index: number) => <option key={`clue${clue.id}`} value={clue.id}>
       {index}: {clue.description}
     </option>);
 
     const ruleElements: JSX.Element[] = [];
 
     if (this.state.selectedClueId) {
-      const clue = this.state.game.getClue(this.state.selectedClueId);
+      const clue = this.state.puzzle.getClue(this.state.selectedClueId);
 
       clue.rules.map((rule: { id: string, type: string }) => {
         ruleElements.push(<option key={`rule${rule.id}`} value={rule.id}>
@@ -1047,10 +1094,10 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     if (this.state.highlightMode === "ELEMENT" && this.state.selectedElementId !== undefined) {
       selectedElementIds.push(this.state.selectedElementId);
     } else if (this.state.highlightMode === "GROUP" && this.state.selectedEntityGroupId !== undefined) {
-      const group = this.state.game.getEntityGroup(this.state.selectedEntityGroupId);
+      const group = this.state.puzzle.getEntityGroup(this.state.selectedEntityGroupId);
 
       group.entityIds.map((entityId: string) => {
-        const entity = this.state.game.getEntity(entityId);
+        const entity = this.state.puzzle.getEntity(entityId);
 
         entity.points.map((point: { id: string }) => {
           selectedElementIds.push(point.id);
@@ -1085,14 +1132,14 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     </div>;
 
     if (this.state.selectedRuleId !== undefined) {
-      const rule = this.state.game.getRule(this.state.selectedRuleId);
+      const rule = this.state.puzzle.getRule(this.state.selectedRuleId);
 
       if (rule.type === "RELATIONSHIP") {
         const relationshipRule = rule as TovelundRelationshipRule;
 
         ruleDetails = <>
           <div className="component">
-            <div className="information">Group Type: {relationshipRule.entityGroupTypeIds}</div>
+            <div className="information">Group Type: {relationshipRule.entityGroupTypeIds.map((id: string) => this.state.puzzle.getEntityGroupType(id).name)}</div>
           </div>
           <div className="component">
             <select value={relationshipRule.mode} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectRelationshipRuleMode(event.currentTarget.value)} style={{ width: "10em" }}>
@@ -1110,10 +1157,11 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
           <div className="component buttons">
             <button className="action" onClick={this.addFeatureStartToRelationshipRule} disabled={this.state.selectedFeatureId === undefined}>Add FeatureStartId</button>
             <button className="action" onClick={this.addFeatureEndToRelationshipRule} disabled={this.state.selectedFeatureId === undefined}>Add FeatureEndId</button>
+            <button className="action" onClick={this.addGroupTypeToRelationshipRule} disabled={this.state.selectedEntityGroupTypeId === undefined}>Add Group Type</button>
           </div>
           <div className="component">
-            <div className="information">Feature Starts: {relationshipRule.featureStartIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
-            <div className="information">Feature Ends: {relationshipRule.featureEndIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+            <div className="information">Feature Starts: {relationshipRule.featureStartIds.map((id: string) => this.state.puzzle.getFeature(id).name)}</div>
+            <div className="information">Feature Ends: {relationshipRule.featureEndIds.map((id: string) => this.state.puzzle.getFeature(id).name)}</div>
           </div>
         </>;
       } else if (rule.type === "QUANTITY") {
@@ -1129,7 +1177,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
             <input type="string" id="quantities" value={this.state.quantitiesString} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeQuantitiesOfQuantityRule(event.target.value)} />
           </div>
           <div className="component">
-            <div className="information">Features: {quantityRule.featureIds.map(featureId => this.state.game.getFeature(featureId).name).join(",")}</div>
+            <div className="information">Features: {quantityRule.featureIds.map(featureId => this.state.puzzle.getFeature(featureId).name).join(",")}</div>
           </div>
           <div className="component">
             <div className="information">Quantities: {quantityRule.quantities.join(",")}</div>
@@ -1151,13 +1199,13 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
             <button className="action" onClick={this.addFeatureEndToDistanceRule} disabled={this.state.selectedFeatureId === undefined}>Add Feature End Id</button>
           </div>
           <div className="component">
-            <div className="information">Feature Starts: {distanceRule.featureStartIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+            <div className="information">Feature Starts: {distanceRule.featureStartIds.map((id: string) => this.state.puzzle.getFeature(id).name)}</div>
           </div>
           <div className="component">
-            <div className="information">Feature Middles: {distanceRule.featureMiddleIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+            <div className="information">Feature Middles: {distanceRule.featureMiddleIds.map((id: string) => this.state.puzzle.getFeature(id).name)}</div>
           </div>
           <div className="component">
-            <div className="information">Feature Ends: {distanceRule.featureEndIds.map((id: string) => this.state.game.getFeature(id).name)}</div>
+            <div className="information">Feature Ends: {distanceRule.featureEndIds.map((id: string) => this.state.puzzle.getFeature(id).name)}</div>
           </div>
         </>;
       } else if (rule.type === "SEQUENCE") {
@@ -1191,7 +1239,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
             <button className="action" onClick={this.addFeatureToSequenceAtIndex}>Add Feature To Sequence At Index</button>
           </div>
           {this.state.selectedSequenceIndex !== undefined && < div className="component">
-            <div className="information">Features: {sequenceRule.featureIds[this.state.selectedSequenceIndex].map(featureId => this.state.game.getFeature(featureId).name).join(",")}</div>
+            <div className="information">Features: {sequenceRule.featureIds[this.state.selectedSequenceIndex].map(featureId => this.state.puzzle.getFeature(featureId).name).join(",")}</div>
           </div>}
         </>;
       }
@@ -1211,7 +1259,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         <div className="component buttons">
           <button className="action" onClick={this.addEntity} disabled={this.state.selectedFeatureCollectionId === undefined}>Add Entity</button>
           <button className="action" onClick={this.moveEntityUp}>Move Entity Up</button>
-          <button className="action" onClick={this.addRectangle} disabled={this.state.selectedEntityId === undefined || this.state.game.getEntity(this.state.selectedEntityId).rectangle !== undefined}>Add Rectangle</button>
+          <button className="action" onClick={this.addRectangle} disabled={this.state.selectedEntityId === undefined || this.state.puzzle.getEntity(this.state.selectedEntityId).rectangle !== undefined}>Add Rectangle</button>
           <button className="action" onClick={this.addPoint} disabled={this.state.selectedEntityId === undefined}>Add Point</button>
           <button className="action" onClick={this.addLine} disabled={this.state.selectedEntityId === undefined}>Add Line</button>
           <button className="action" onClick={this.addVertex} disabled={!(this.state.selectedElementType === TovelundElementType.Line || this.state.selectedElementType === TovelundElementType.Vertex) || this.state.selectedElementId === undefined}>Add Vertex</button>
@@ -1219,12 +1267,12 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         </div>
         {entitySelector}
         <div className="component">
-          <select value={this.state.selectedEntityId ? (this.state.game.getEntity(this.state.selectedEntityId).featureCollectionId) : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.setEntityFeatureCollection(event.currentTarget.value)} style={{ width: "10em" }}>
+          <select value={this.state.selectedEntityId ? (this.state.puzzle.getEntity(this.state.selectedEntityId).featureCollectionId) : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.setEntityFeatureCollection(event.currentTarget.value)} style={{ width: "10em" }}>
             {featureCollectionElements}
           </select>
         </div>
         <div className="component">
-          <select value={this.state.selectedEntityId ? (this.state.game.getEntity(this.state.selectedEntityId).fixedFeatureId ? this.state.game.getEntity(this.state.selectedEntityId).fixedFeatureId : "NONE") : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectEntityFeatureId(event.currentTarget.value)} style={{ width: "10em" }}>
+          <select value={this.state.selectedEntityId ? (this.state.puzzle.getEntity(this.state.selectedEntityId).fixedFeatureId ? this.state.puzzle.getEntity(this.state.selectedEntityId).fixedFeatureId : "NONE") : "NONE"} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectEntityFeatureId(event.currentTarget.value)} style={{ width: "10em" }}>
             {entityFeatureElements}
           </select>
         </div>
@@ -1237,7 +1285,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         {this.state.selectedEntityId !== undefined && <div className="component">
           <label htmlFor="name">Name</label>
           <br />
-          <input type="text" id="name" defaultValue={this.state.game.getEntity(this.state.selectedEntityId).name} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeEntityName(event.target.value)} />
+          <input type="text" id="name" defaultValue={this.state.puzzle.getEntity(this.state.selectedEntityId).name} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeEntityName(event.target.value)} />
         </div>}
         <div className="component">
           <label htmlFor="xValue">X</label>
@@ -1250,9 +1298,9 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
           <input type="number" id="yValue" value={y} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeY(event.target.value)} />
         </div>
         <div className="component">
-          <label htmlFor="gameScale">Scale</label>
+          <label htmlFor="puzzleScale">Scale</label>
           <br />
-          <input type="number" id="gameScale" value={this.state.game.getScale()} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeScale(event.target.value)} min={50} max={150} />
+          <input type="number" id="puzzleScale" value={this.state.puzzle.getScale()} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeScale(event.target.value)} min={50} max={150} />
         </div>
       </>}
       {this.state.mode === "GROUPS" && <>
@@ -1272,7 +1320,7 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         </div>
         {this.state.selectedEntityGroupId !== undefined && <div className="component">
           <div className="information">
-            {this.state.game.getEntityGroupType(this.state.game.getEntityGroup(this.state.selectedEntityGroupId).entityGroupTypeId).name}
+            {this.state.puzzle.getEntityGroupType(this.state.puzzle.getEntityGroup(this.state.selectedEntityGroupId).entityGroupTypeId).name}
           </div>
         </div>}
         <div className="component">
@@ -1298,10 +1346,10 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
         <div className="component">
           <label htmlFor="featureCollectionName">Feature Collection Name</label>
           <br />
-          <input type="string" id="featureCollectionName" value={this.state.selectedFeatureCollectionId ? this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId).name : undefined} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeFeatureCollectionName(event.target.value)} />
+          <input type="string" id="featureCollectionName" value={this.state.selectedFeatureCollectionId ? this.state.puzzle.getFeatureCollection(this.state.selectedFeatureCollectionId).name : undefined} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeFeatureCollectionName(event.target.value)} />
         </div>
         <div className="component">
-          <select value={this.state.selectedFeatureCollectionId ? this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId).color : undefined} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectFeatureCollectionColor(event.currentTarget.value)} style={{ width: "10em" }}>
+          <select value={this.state.selectedFeatureCollectionId ? this.state.puzzle.getFeatureCollection(this.state.selectedFeatureCollectionId).color : undefined} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectFeatureCollectionColor(event.currentTarget.value)} style={{ width: "10em" }}>
             {featureCollectionColorElements}
           </select>
         </div>
@@ -1327,7 +1375,8 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
           </select>
         </div>
         <div className="component buttons">
-          <button className="action" onClick={this.addFeature} disabled={this.state.selectedFeatureCollectionId === undefined || this.state.game.getFeatureCollection(this.state.selectedFeatureCollectionId).set.length === 8 || this.state.selectedAvailableFeatureType === undefined || this.state.selectedAvailableFeatureName === undefined || this.state.selectedAvailableFeatureSymbol === undefined}>Add Feature Type</button>
+          <button className="action" onClick={this.addFeature} disabled={this.state.selectedFeatureCollectionId === undefined || this.state.puzzle.getFeatureCollection(this.state.selectedFeatureCollectionId).set.length === 8 || this.state.selectedAvailableFeatureType === undefined || this.state.selectedAvailableFeatureName === undefined || this.state.selectedAvailableFeatureSymbol === undefined}>Add Feature Type</button>
+          <button className="action" onClick={this.deleteFeature} disabled={this.state.selectedFeatureId === undefined}>Delete Feature Type</button>
         </div>
       </>}
       {this.state.mode === "CLUES" && <>
@@ -1348,11 +1397,11 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
           <div className="component">
             <label htmlFor="clueDescription">Clue Description</label>
             <br />
-            <input type="text" id="clueDescription" value={this.state.game.getClue(this.state.selectedClueId).description} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeClueDescription(event.target.value)} />
+            <input type="text" id="clueDescription" value={this.state.puzzle.getClue(this.state.selectedClueId).description} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeClueDescription(event.target.value)} />
           </div>
           <div className="component">
             <div className="information">
-              {convertClueDescription(this.state.game.getClue(this.state.selectedClueId).description)}
+              {convertClueDescription(this.state.puzzle.getClue(this.state.selectedClueId).description)}
             </div>
           </div>
         </>}
@@ -1387,36 +1436,36 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
       </div>
       <div className="component">
         <div style={{ width: "24em", margin: "auto" }}>
-          {getTovelundMap(this.state.game, this.selectEntity, selectedElementIds, true)}
+          {getTovelundMap(this.state.puzzle, this.selectEntity, selectedElementIds, "DEV")}
         </div>
       </div>
       <div className="component">
-        <label htmlFor="gameTitle">Game Title</label>
+        <label htmlFor="puzzleTitle">Puzzle Title</label>
         <br />
-        <input type="string" id="gameTitle" value={this.state.gameTitle} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeTitle(event.target.value)} />
+        <input type="string" id="puzzleTitle" value={this.state.puzzleTitle} onChange={(event: React.ChangeEvent<HTMLInputElement>) => this.changeTitle(event.target.value)} />
       </div>
       <div className="component buttons">
         <button className="action" onClick={this.countSolutions}>Count Solutions</button>
-        <button className="action" onClick={this.saveGame}>Save</button>
+        <button className="action" onClick={this.savePuzzle}>Save</button>
       </div>
       <div className="component">
-        <select value={this.state.selectedGameId} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectGame(event.currentTarget.value)} style={{ width: "10em" }}>
+        <select value={this.state.selectedPuzzleId} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => this.selectPuzzle(event.currentTarget.value)} style={{ width: "10em" }}>
           <option value="-1" disabled>Choose</option>
-          {gameOptions}
+          {puzzleOptions}
         </select>
       </div>
       <div className="component buttons">
-        <button className="action" onClick={this.loadGame} disabled={this.state.selectedGameId === -1}>Load Game</button>
+        <button className="action" onClick={this.loadPuzzle} disabled={this.state.selectedPuzzleId === -1}>Load Puzzle</button>
       </div>
       <div className="component">
         <div className="text">Solution Count: {this.state.solutionCount}</div>
         <div className="text">Selected Entity Id: {this.state.selectedEntityId}</div>
         <div className="text">Selected Feature Type: {this.state.selectedElementType}</div>
         <div className="text">Selected Feature Id: {this.state.selectedElementId}</div>
-        <div className="text">Selected Entity Type: {this.state.selectedEntityId && this.state.game.getEntity(this.state.selectedEntityId).fixedFeatureId}</div>
+        <div className="text">Selected Entity Type: {this.state.selectedEntityId && this.state.puzzle.getEntity(this.state.selectedEntityId).fixedFeatureId}</div>
       </div>
       <div className="component buttons">
-        <button className="action" onClick={() => { console.log(this.state.game.game) }}>Console Log</button>
+        <button className="action" onClick={() => { console.log(this.state.puzzle.puzzleDesign) }}>Console Log</button>
       </div>
     </div>;
   }

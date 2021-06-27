@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { NavLink } from 'reactstrap';
 import { Link } from 'react-router-dom';
-import { PaperFolliesIcon, CapricottaIcon, CapitalPartyIcon } from '../common/Assets';
+import { PaperFolliesIcon, CapricottaIcon, CapitalPartyIcon, TovelundPuzzlesIcon } from '../common/Assets';
 
 interface HomeState {
   folliesSegment1: string,
@@ -13,7 +13,9 @@ interface HomeState {
   capricottaSegment1: string,
   capricottaSegment2: string,
   capricottaSegment3: string,
-  capricottaHover: boolean
+  capricottaHover: boolean,
+  tovelundColor: string,
+  tovelundHover: boolean
 }
 
 export class Home extends React.Component<any, HomeState> {
@@ -30,7 +32,9 @@ export class Home extends React.Component<any, HomeState> {
       capricottaSegment1: "The clouds floated majestically above the mountains...",
       capricottaSegment2: "...and the forests hugged the base of the mountains...",
       capricottaSegment3: "...while the river abandoned the mountains for the sea",
-      capricottaHover: false
+      capricottaHover: false,
+      tovelundColor: "#bf7",
+      tovelundHover: false
     };
   }
 
@@ -70,7 +74,7 @@ export class Home extends React.Component<any, HomeState> {
     })
   }
 
-  onMouseEnter = () => {
+  onMouseEnterCapricotta = () => {
     this.setState({
       capricottaSegment1: "The zeppelin floated majestically above the mountains...",
       capricottaSegment2: "...and the train hugged the base of the mountains...",
@@ -79,14 +83,28 @@ export class Home extends React.Component<any, HomeState> {
     })
   } 
 
-  onMouseLeave = () => {
+  onMouseLeaveCapricotta = () => {
     this.setState({
       capricottaSegment1: "The clouds floated majestically above the mountains...",
       capricottaSegment2: "...and the forests hugged the base of the mountains...",
       capricottaSegment3: "...while the river abandoned the mountains for the sea",
       capricottaHover: false
     })
-  } 
+  }
+
+  onMouseEnterTovelund = () => {
+    this.setState({
+      tovelundColor: "#dfb",
+      tovelundHover: true
+    })
+  }
+
+  onMouseLeaveTovelund = () => {
+    this.setState({
+      tovelundColor: "#bf7",
+      tovelundHover: false
+    })
+  }
 
   render () {
     return (
@@ -100,15 +118,31 @@ export class Home extends React.Component<any, HomeState> {
         </div>
         <div className="section">
           <div className="component">
-            <NavLink tag={Link} to="/paper-follies" style={{ width: "24em", margin: "auto" }}><PaperFolliesIcon
-              onMouseEvent={this.onMouseEvent}
-              segment1={this.state.folliesSegment1}
-              segment2={this.state.folliesSegment2}
-              segment3={this.state.folliesSegment3}
-              color1={this.state.folliesColor1}
-              color2={this.state.folliesColor2}
-              color3={this.state.folliesColor3}
-            /></NavLink>
+            <NavLink tag={Link} to="/tovelund-puzzles" style={{ width: "24em", margin: "auto" }}>
+              <TovelundPuzzlesIcon
+                onMouseEnter={this.onMouseEnterTovelund}
+                onMouseLeave={this.onMouseLeaveTovelund}
+                color={this.state.tovelundColor}
+              />
+            </NavLink>
+          </div>
+          <div className="component">
+            <div className="emphasis">Tovelund Puzzles is a collection of logic puzzles where you are a city planner required to meet all the requirement of a city.</div>
+          </div>
+        </div>
+        <div className="section">
+          <div className="component">
+            <NavLink tag={Link} to="/paper-follies" style={{ width: "24em", margin: "auto" }}>
+              <PaperFolliesIcon
+                onMouseEvent={this.onMouseEvent}
+                segment1={this.state.folliesSegment1}
+                segment2={this.state.folliesSegment2}
+                segment3={this.state.folliesSegment3}
+                color1={this.state.folliesColor1}
+                color2={this.state.folliesColor2}
+                color3={this.state.folliesColor3}
+              />
+            </NavLink>
           </div>
           <div className="component">
             <div className="emphasis">Paper Follies is a creative writing game for three or more players. Each player is given a segment of a piece of writing to work on, but can only see a limited amount of what other people are writing!</div>
@@ -116,14 +150,16 @@ export class Home extends React.Component<any, HomeState> {
         </div>
         <div className="section">
           <div className="component">
-            <NavLink tag={Link} to="/capricotta" style={{ width: "24em", margin: "auto" }}><CapricottaIcon
-              onMouseEnter={this.onMouseEnter}
-              onMouseLeave={this.onMouseLeave}
-              segment1={this.state.capricottaSegment1}
-              segment2={this.state.capricottaSegment2}
-              segment3={this.state.capricottaSegment3}
-              showVehicles={this.state.capricottaHover}
-            /></NavLink>
+            <NavLink tag={Link} to="/capricotta" style={{ width: "24em", margin: "auto" }}>
+              <CapricottaIcon
+                onMouseEnter={this.onMouseEnterCapricotta}
+                onMouseLeave={this.onMouseLeaveCapricotta}
+                segment1={this.state.capricottaSegment1}
+                segment2={this.state.capricottaSegment2}
+                segment3={this.state.capricottaSegment3}
+                showVehicles={this.state.capricottaHover}
+              />
+            </NavLink>
           </div>
           <div className="component">
             <div className="emphasis">Capricotta is a quick writing game for one person. Given a set of words, write a thing containing those words and have your input modified and placed against a picture. New material added occasionally.</div>

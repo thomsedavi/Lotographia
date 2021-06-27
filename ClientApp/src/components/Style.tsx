@@ -90,7 +90,7 @@ export class Style extends React.Component<any, StyleState> {
         <div className="component">
           <label htmlFor="occupation">Occupation</label>
           <br />
-          <input type="text" id="occupation"disabled />
+          <input type="text" id="occupation" disabled />
         </div>
         <div className="component">
           <input type="checkbox" id="doSomething" />

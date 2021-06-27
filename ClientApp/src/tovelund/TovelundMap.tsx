@@ -1,24 +1,25 @@
 ﻿import * as React from "react";
-import { TovelundColor, TovelundEntity, TovelundFeatureType, TovelundPointSize, TovelundLine, TovelundPoint } from "./TovelundEnums";
-import { TovelundGameClass } from "./TovelundGameClass";
+import { TovelundEntity, TovelundFeatureType, TovelundPointSize, TovelundLine, TovelundPoint } from "./TovelundEnums";
+import { TovelundPuzzleDesignClass } from "./TovelundPuzzleDesignClass";
+import { LotographiaColor, getColor } from "../common/Colors";
 
-export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityId: string) => void, selectedElementIdz: string[], devMode: boolean) => {
-  const scale = game.getScale();
+export const getTovelundMap = (puzzle: TovelundPuzzleDesignClass, selectEntityId: (entityId: string) => void, selectedElementIdz: string[], mode: "PREVIEW" | "DEV" | "SOLVE") => {
+  const scale = puzzle.getScale();
   const xOffset = 0.6 * scale;
   const yOffset = 0.4 * scale;
 
   const overlayElements: JSX.Element[] = [];
 
-  const layersElements = game.getEntities().map((entity: TovelundEntity) => {
+  const layersElements = puzzle.getEntities().map((entity: TovelundEntity) => {
     const featureId = entity.fixedFeatureId !== undefined ? entity.fixedFeatureId : entity.selectedFeatureId;
 
     let feature: { id: string, type: string, symbol: string } | undefined = undefined;
 
     if (featureId) {
-      feature = game.getFeatureCollection(entity.featureCollectionId).set.filter(f => f.id === featureId)[0];
+      feature = puzzle.getFeatureCollection(entity.featureCollectionId).set.filter(f => f.id === featureId)[0];
     }
 
-    const defaultColor = game.getFeatureCollection(entity.featureCollectionId).color;
+    const color = puzzle.getFeatureCollection(entity.featureCollectionId).color;
 
     const entityElements: JSX.Element[] = [];
 
@@ -33,14 +34,14 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
       }
 
       const selectedVertex = vertices.filter(vertex => selectedElementIdz.indexOf(vertex.id) !== -1)[0];
-      let stroke = defaultColor;
+      let stroke = getColor(color, 3);
 
       if (selectedElementIdz.indexOf(line.id) !== -1 || selectedVertex !== undefined) {
-        stroke = TovelundColor.Black;
+        stroke = LotographiaColor.Black;
       }
 
       if (selectedVertex !== undefined) {
-        overlayElements.push(<circle key={`selected_point`} cx={selectedVertex.x + xOffset} cy={selectedVertex.y + yOffset} r={2} style={{ fill: TovelundColor.Transparent, stroke: TovelundColor.Black, strokeWidth: 0.005 * scale }} />)
+        overlayElements.push(<circle key={`selected_point`} cx={selectedVertex.x + xOffset} cy={selectedVertex.y + yOffset} r={2} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />)
       }
 
       let paths: JSX.Element[] = [];
@@ -64,27 +65,34 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
             const bottomLeft = vertex4 ? (vertex4.x < vertex3.x ? vertex3.y - 2 : vertex3.y + 2) : vertex3.y;
 
             paths.push(<mask key={`entity${entity.id}line${line.id}mask${i}`} id={`entity${entity.id}line${line.id}mask${i}`}>
-              <path d={`M${startVertex.x - 2},${topLeft}L${startVertex.x + 2},${topRight}L${startVertex.x + 2},${bottomRight}L${startVertex.x - 2},${bottomLeft}Z`} fill={TovelundColor.White} />
+              <path d={`M${startVertex.x - 2},${topLeft}L${startVertex.x + 2},${topRight}L${startVertex.x + 2},${bottomRight}L${startVertex.x - 2},${bottomLeft}Z`} fill={LotographiaColor.White} />
             </mask>);
 
             const pathFeatures: JSX.Element[] = [];
 
             if (feature.type === TovelundFeatureType.Railway) {
               for (var j = vertex2.y - 4; j < vertex3.y + 4; j += 1) {
-                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${startVertex.x - 1.5},${j}L${startVertex.x + 1.5},${j}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
+                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${startVertex.x - 1.5},${j}L${startVertex.x + 1.5},${j}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />);
               }
+
+              paths.push(<g key={`entity${entity.id}line${line.id}segment${i}`} mask={`url(#entity${entity.id}line${line.id}mask${i})`} >
+                <path d={`M${startVertex.x - 2},${vertex2.y - 4}L${startVertex.x - 2},${vertex3.y + 4},L${startVertex.x + 2},${vertex3.y + 4}L${startVertex.x + 2},${vertex2.y - 4}Z`} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Transparent }} />
+                <path d={`M${startVertex.x - 1},${vertex2.y - 4}L${startVertex.x - 1},${vertex3.y + 4}`} style={{ stroke: LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+                <path d={`M${startVertex.x + 1},${vertex2.y - 4}L${startVertex.x + 1},${vertex3.y + 4}`} style={{ stroke: LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+                {pathFeatures}
+              </g>);
             } else if (feature.type === TovelundFeatureType.Road) {
               for (var j = vertex2.y - 4; j < vertex3.y + 4; j += 2) {
-                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${startVertex.x},${j}L${startVertex.x},${j + 1}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
+                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${startVertex.x},${j}L${startVertex.x},${j + 1}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Blue4, strokeWidth: 0.005 * scale }} />);
               }
-            }
 
-            paths.push(<g key={`entity${entity.id}line${line.id}segment${i}`} mask={`url(#entity${entity.id}line${line.id}mask${i})`} >
-              <path d={`M${startVertex.x - 2},${vertex2.y - 4}L${startVertex.x - 2},${vertex3.y + 4},L${startVertex.x + 2},${vertex3.y + 4}L${startVertex.x + 2},${vertex2.y - 4}Z`} style={{ fill: TovelundColor.White, stroke: TovelundColor.Transparent }} />
-              <path d={`M${startVertex.x - 1},${vertex2.y - 4}L${startVertex.x - 1},${vertex3.y + 4}`} style={{ stroke: stroke, strokeWidth: 0.005 * scale }} />
-              <path d={`M${startVertex.x + 1},${vertex2.y - 4}L${startVertex.x + 1},${vertex3.y + 4}`} style={{ stroke: stroke, strokeWidth: 0.005 * scale }} />
-              {pathFeatures}
-            </g>);
+              paths.push(<g key={`entity${entity.id}line${line.id}segment${i}`} mask={`url(#entity${entity.id}line${line.id}mask${i})`} >
+                <path d={`M${startVertex.x - 2},${vertex2.y - 4}L${startVertex.x - 2},${vertex3.y + 4},L${startVertex.x + 2},${vertex3.y + 4}L${startVertex.x + 2},${vertex2.y - 4}Z`} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Transparent }} />
+                <path d={`M${startVertex.x - 1},${vertex2.y - 4}L${startVertex.x - 1},${vertex3.y + 4}`} style={{ stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+                <path d={`M${startVertex.x + 1},${vertex2.y - 4}L${startVertex.x + 1},${vertex3.y + 4}`} style={{ stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+                {pathFeatures}
+              </g>);
+            }
           } else if (startVertex.y === endVertex.y) {
             const vertex1 = startVertex.x < endVertex.x ? previousVertex : nextVertex;
             const vertex2 = startVertex.x < endVertex.x ? startVertex : endVertex;
@@ -97,29 +105,36 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
             const topRight = vertex4 ? (vertex4.y < vertex3.y ? vertex3.x - 2 : vertex3.x + 2) : vertex3.x;
 
             paths.push(<mask key={`entity${entity.id}line${line.id}mask${i}`} id={`entity${entity.id}line${line.id}mask${i}`}>
-              <path d={`M${topLeft},${startVertex.y - 2}L${topRight},${startVertex.y - 2}L${bottomRight},${startVertex.y + 2}L${bottomLeft},${startVertex.y + 2}Z`} fill={TovelundColor.White} />
+              <path d={`M${topLeft},${startVertex.y - 2}L${topRight},${startVertex.y - 2}L${bottomRight},${startVertex.y + 2}L${bottomLeft},${startVertex.y + 2}Z`} fill={LotographiaColor.White} />
             </mask>);
 
             const pathFeatures: JSX.Element[] = [];
 
             if (feature.type === TovelundFeatureType.Railway) {
               for (var j = vertex2.x - 4; j < vertex3.x + 4; j += 2) {
-                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${j},${startVertex.y - 1.5}L${j},${startVertex.y + 1.5}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
+                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${j},${startVertex.y - 1.5}L${j},${startVertex.y + 1.5}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />);
               }
+
+              paths.push(<g key={`entity${entity.id}line${line.id}segment${i}`} mask={`url(#entity${entity.id}line${line.id}mask${i})`} >
+                <path d={`M${vertex2.x - 4},${startVertex.y - 2}L${vertex3.x + 4},${startVertex.y - 2}L${vertex3.x + 4},${startVertex.y + 2}L${vertex2.x - 4},${startVertex.y + 2}Z`} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Transparent }} />
+                <path d={`M${vertex2.x - 4},${startVertex.y - 1}L${vertex3.x + 4},${startVertex.y - 1}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+                <path d={`M${vertex2.x - 4},${startVertex.y + 1}L${vertex3.x + 4},${startVertex.y + 1}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+                {pathFeatures}
+              </g>);
             } else if (feature.type === TovelundFeatureType.Road) {
               for (var j = vertex2.x - 4; j < vertex3.x + 4; j += 3) {
-                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${j},${startVertex.y}L${j + 1.5},${startVertex.y}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
+                pathFeatures.push(<path key={`entity${entity.id}line${line.id}segment${i}part${j}`} d={`M${j},${startVertex.y}L${j + 1.5},${startVertex.y}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Blue4, strokeWidth: 0.005 * scale }} />);
               }
-            }
 
-            paths.push(<g key={`entity${entity.id}line${line.id}segment${i}`} mask={`url(#entity${entity.id}line${line.id}mask${i})`} >
-              <path d={`M${vertex2.x - 4},${startVertex.y - 2}L${vertex3.x + 4},${startVertex.y - 2}L${vertex3.x + 4},${startVertex.y + 2}L${vertex2.x - 4},${startVertex.y + 2}Z`} style={{ fill: TovelundColor.White, stroke: TovelundColor.Transparent }} />
-              <path d={`M${vertex2.x - 4},${startVertex.y - 1}L${vertex3.x + 4},${startVertex.y - 1}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />
-              <path d={`M${vertex2.x - 4},${startVertex.y + 1}L${vertex3.x + 4},${startVertex.y + 1}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />
-              {pathFeatures}
-            </g>);
+              paths.push(<g key={`entity${entity.id}line${line.id}segment${i}`} mask={`url(#entity${entity.id}line${line.id}mask${i})`} >
+                <path d={`M${vertex2.x - 4},${startVertex.y - 2}L${vertex3.x + 4},${startVertex.y - 2}L${vertex3.x + 4},${startVertex.y + 2}L${vertex2.x - 4},${startVertex.y + 2}Z`} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Transparent }} />
+                <path d={`M${vertex2.x - 4},${startVertex.y - 1}L${vertex3.x + 4},${startVertex.y - 1}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+                <path d={`M${vertex2.x - 4},${startVertex.y + 1}L${vertex3.x + 4},${startVertex.y + 1}`} style={{ fill: LotographiaColor.Transparent, stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+                {pathFeatures}
+              </g>);
+            }
           } else {
-            paths.push(<path key={`entity${entity.id}line${line.id}segment${i}`} d={`M${startVertex.x},${startVertex.y}L${endVertex.x},${endVertex.y}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
+            paths.push(<path key={`entity${entity.id}line${line.id}segment${i}`} d={`M${startVertex.x},${startVertex.y}L${endVertex.x},${endVertex.y}`} style={{ fill: LotographiaColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
           }
         }
       } else {
@@ -127,7 +142,11 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
           const startVertex = vertices[i];
           const endVertex = vertices[i + 1];
 
-          paths.push(<path key={`entity${entity.id}line${line.id}segment${i}`} d={`M${startVertex.x},${startVertex.y}L${endVertex.x},${endVertex.y}`} style={{ fill: TovelundColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
+          if (line.attributes["IsBorder"]) {
+            paths.push(<path key={`entity${entity.id}line${line.id}segment${i}`} d={`M${startVertex.x},${startVertex.y}L${endVertex.x},${endVertex.y}`} style={{ fill: LotographiaColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale }} />);
+          } else {
+            paths.push(<path key={`entity${entity.id}line${line.id}segment${i}`} d={`M${startVertex.x},${startVertex.y}L${endVertex.x},${endVertex.y}`} style={{ fill: LotographiaColor.Transparent, stroke: stroke, strokeWidth: 0.005 * scale, strokeDasharray: "2 2" }} />);
+          }
         }
       }
 
@@ -143,9 +162,9 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
       const r: number = point.attributes["Size"] === TovelundPointSize.Small ? 2 : point.attributes["Size"] === TovelundPointSize.Large ? 4 : 3;
       const pointIsSelected = selectedElementIdz.indexOf(point.id) !== -1;
 
-      if (devMode) {
+      if (mode === "DEV") {
         entityElements.push(<g key={`entity${entity.id}point${point.id}circle`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <circle cx={point.x} cy={point.y} r={r} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.0025 * scale }} />
+          <circle cx={point.x} cy={point.y} r={r} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.0025 * scale }} />
         </g>);
       }
 
@@ -158,53 +177,70 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
 
       if (feature && feature.type === TovelundFeatureType.Mountain) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x - (r * 0.9)},${point.y + (r * 0.44)}L${point.x},${point.y - (r * 0.44)}L${point.x + (r * 0.9)},${point.y + (r * 0.44)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Blue, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.9)},${point.y + (r * 0.44)}L${point.x},${point.y - (r * 0.44)}L${point.x + (r * 0.9)},${point.y + (r * 0.44)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
         </g>;
       } else if (feature && feature.type === TovelundFeatureType.Forest) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x - (r * 0.31)},${point.y + (r * 0.95)}L${point.x - (r * 0.31)},${point.y + (r * 0.44)}L${point.x - (r * 0.9)},${point.y + (r * 0.44)}L${point.x},${point.y - r}L${point.x + (r * 0.9)},${point.y + (r * 0.44)}L${point.x + (r * 0.31)},${point.y + (r * 0.44)}L${point.x + (r * 0.31)},${point.y + (r * 0.95)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.31)},${point.y + (r * 0.95)}L${point.x - (r * 0.31)},${point.y + (r * 0.44)}L${point.x - (r * 0.9)},${point.y + (r * 0.44)}L${point.x},${point.y - r}L${point.x + (r * 0.9)},${point.y + (r * 0.44)}L${point.x + (r * 0.31)},${point.y + (r * 0.44)}L${point.x + (r * 0.31)},${point.y + (r * 0.95)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
         </g>;
       } else if (feature && feature.type === TovelundFeatureType.House) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x - (r * 0.7)},${point.y}L${point.x - (r * 0.6)},${point.y + (r * 0.7)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <circle cx={point.x - (r * 0.7)} cy={point.y} r={r / 4} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Vermillion, strokeWidth: 0.0025 * scale }} />
-          <path d={`M${point.x + (r * 0.5)},${point.y - (r * 0.4)}L${point.x + (r * 0.5)},${point.y + (r * 0.2)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <circle cx={point.x + (r * 0.5)} cy={point.y - (r * 0.4)} r={r / 4} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Yellow, strokeWidth: 0.0025 * scale }} />
-          <path d={`M${point.x + (r * 0.1)},${point.y + (r * 0.3)}L${point.x + (r * 0.1)},${point.y + (r * 0.9)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <circle cx={point.x + (r * 0.1)} cy={point.y + (r * 0.3)} r={r / 4} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Blue, strokeWidth: 0.0025 * scale }} />
-          <path d={`M${point.x - (r * 0.2)},${point.y - (r * 0.6)}L${point.x - (r * 0.2)},${point.y}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <circle cx={point.x - (r * 0.2)} cy={point.y - (r * 0.6)} r={r / 4} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Orange, strokeWidth: 0.0025 * scale }} />
+          <path d={`M${point.x - (r * 0.7)},${point.y}L${point.x - (r * 0.6)},${point.y + (r * 0.7)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+          <circle cx={point.x - (r * 0.7)} cy={point.y} r={r / 4} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Purple3, strokeWidth: 0.0025 * scale }} />
+          <path d={`M${point.x + (r * 0.5)},${point.y - (r * 0.4)}L${point.x + (r * 0.5)},${point.y + (r * 0.2)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+          <circle cx={point.x + (r * 0.5)} cy={point.y - (r * 0.4)} r={r / 4} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange5, strokeWidth: 0.0025 * scale }} />
+          <path d={`M${point.x + (r * 0.1)},${point.y + (r * 0.3)}L${point.x + (r * 0.1)},${point.y + (r * 0.9)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+          <circle cx={point.x + (r * 0.1)} cy={point.y + (r * 0.3)} r={r / 4} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange5, strokeWidth: 0.0025 * scale }} />
+          <path d={`M${point.x - (r * 0.2)},${point.y - (r * 0.6)}L${point.x - (r * 0.2)},${point.y}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+          <circle cx={point.x - (r * 0.2)} cy={point.y - (r * 0.6)} r={r / 4} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.0025 * scale }} />
         </g>;
       } else if (feature && feature.type === TovelundFeatureType.Airport) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x},${point.y - (r * 0.8)}L${point.x},${point.y - (r * 0.2)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Vermillion, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x + (r * 0.3)},${point.y - (r * 0.8)}L${point.x + (r * 0.3)},${point.y - (r * 0.3)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Vermillion, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x - (r * 0.44)},${point.y + (r * 0.9)}L${point.x - (r * 0.44)},${point.y - (r * 0.9)}L${point.x + (r * 0.6)},${point.y - (r * 0.8)}L${point.x + (r * 0.6)},${point.y - (r * 0.3)}L${point.x - (r * 0.44)},${point.y - (r * 0.1)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Black, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x},${point.y - (r * 0.8)}L${point.x},${point.y - (r * 0.2)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Purple3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x + (r * 0.3)},${point.y - (r * 0.8)}L${point.x + (r * 0.3)},${point.y - (r * 0.3)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Purple3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.44)},${point.y + (r * 0.9)}L${point.x - (r * 0.44)},${point.y - (r * 0.9)}L${point.x + (r * 0.6)},${point.y - (r * 0.8)}L${point.x + (r * 0.6)},${point.y - (r * 0.3)}L${point.x - (r * 0.44)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
         </g>;
       } else if (feature && feature.type === TovelundFeatureType.Store) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x - (r * 0.6)},${point.y + (r * 0.8)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Orange, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x + (r * 0.6)},${point.y - (r * 0.2)}L${point.x + (r * 0.6)},${point.y + (r * 0.8)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Orange, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x - (r * 0.8)},${point.y - (r * 0.6)}L${point.x + (r * 0.8)},${point.y - (r * 0.6)}L${point.x + (r * 0.8)},${point.y + (r * 0.2)}L${point.x - (r * 0.8)},${point.y + (r * 0.2)}Z`} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Black, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x - (r * 0.6)},${point.y + (r * 0.8)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x + (r * 0.6)},${point.y - (r * 0.2)}L${point.x + (r * 0.6)},${point.y + (r * 0.8)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.8)},${point.y - (r * 0.6)}L${point.x + (r * 0.8)},${point.y - (r * 0.6)}L${point.x + (r * 0.8)},${point.y + (r * 0.2)}L${point.x - (r * 0.8)},${point.y + (r * 0.2)}Z`} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.5)},${point.y - (r * 0.4)}L${point.x - (r * 0.5)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.4)},${point.y - (r * 0.4)}L${point.x - (r * 0.4)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.2)},${point.y - (r * 0.4)}L${point.x - (r * 0.2)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x + (r * 0.2)},${point.y - (r * 0.4)}L${point.x + (r * 0.2)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Green3, strokeWidth: 0.005 * scale }} />
+        </g>;
+      } else if (feature && feature.type === TovelundFeatureType.Station) {
+        pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
+          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x - (r * 0.6)},${point.y + (r * 0.8)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x + (r * 0.6)},${point.y - (r * 0.2)}L${point.x + (r * 0.6)},${point.y + (r * 0.8)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.8)},${point.y - (r * 0.6)}L${point.x + (r * 0.8)},${point.y - (r * 0.6)}L${point.x + (r * 0.8)},${point.y + (r * 0.2)}L${point.x - (r * 0.8)},${point.y + (r * 0.2)}Z`} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.8)},${point.y - (r * 0.1)}L${point.x + (r * 0.8)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+        </g>;
+      } else if (feature && feature.type === TovelundFeatureType.Warehouse) {
+        pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
+          <path d={`M${point.x - (r * 0.8)},${point.y}L${point.x},${point.y}L${point.x},${point.y + (r * 0.6)}L${point.x - (r * 0.8)},${point.y + (r * 0.6)}Z`} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x},${point.y}L${point.x + (r * 0.8)},${point.y}L${point.x + (r * 0.8)},${point.y + (r * 0.6)}L${point.x},${point.y + (r * 0.6)}Z`} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.6)}L${point.x + (r * 0.2)},${point.y - (r * 0.6)}L${point.x + (r * 0.2)},${point.y}L${point.x - (r * 0.6)},${point.y}Z`} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Orange3, strokeWidth: 0.005 * scale }} />
         </g>;
       } else if (feature && feature.type === TovelundFeatureType.Lighthouse) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x + (r * 0.6)},${point.y - (r * 0.2)}L${point.x + (r * 0.6)},${point.y + (r * 0.8)}L${point.x - (r * 0.6)},${point.y + (r * 0.8)}Z`} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Black, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x - (r * 1)},${point.y}L${point.x},${point.y - (r * 1)}L${point.x + (r * 1)},${point.y}Z`} style={{ fill: TovelundColor.White, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.Vermillion, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x + (r * 0.6)},${point.y - (r * 0.2)}L${point.x + (r * 0.6)},${point.y + (r * 0.8)}L${point.x - (r * 0.6)},${point.y + (r * 0.8)}Z`} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 1)},${point.y}L${point.x},${point.y - (r * 1)}L${point.x + (r * 1)},${point.y}Z`} style={{ fill: LotographiaColor.White, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Purple3, strokeWidth: 0.005 * scale }} />
         </g>;
       } else if (feature && feature.type === TovelundFeatureType.Water) {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.15)}L${point.x - (r * 0.2)},${point.y - (r * 0.44)}L${point.x + (r * 0.4)},${point.y - (r * 0.15)}L${point.x + (r * 0.9)},${point.y - (r * 0.44)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.SkyBlue, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x - (r * 0.9)},${point.y + (r * 0.44)}L${point.x - (r * 0.4)},${point.y + (r * 0.15)}L${point.x + (r * 0.2)},${point.y + (r * 0.44)}L${point.x + (r * 0.6)},${point.y + (r * 0.15)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.SkyBlue, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.15)}L${point.x - (r * 0.2)},${point.y - (r * 0.44)}L${point.x + (r * 0.4)},${point.y - (r * 0.15)}L${point.x + (r * 0.9)},${point.y - (r * 0.44)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Blue4, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.9)},${point.y + (r * 0.44)}L${point.x - (r * 0.4)},${point.y + (r * 0.15)}L${point.x + (r * 0.2)},${point.y + (r * 0.44)}L${point.x + (r * 0.6)},${point.y + (r * 0.15)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Blue4, strokeWidth: 0.005 * scale }} />
         </g>;
       } else {
         pointElement = <g key={`entity${entity.id}point${point.id}`} transform={`matrix(1,0,0,1,${xOffset},${yOffset})`}>
-          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x - (r * 0.6)},${point.y + (r * 0.1)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x + (r * 0.4)},${point.y - (r * 0.4)}L${point.x + (r * 0.4)},${point.y - (r * 0.1)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x - (r * 0.1)},${point.y + (r * 0.4)}L${point.x - (r * 0.1)},${point.y + (r * 0.7)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x + (r * 0.1)},${point.y - (r * 0.6)}L${point.x + (r * 0.1)},${point.y - (r * 0.3)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x + (r * 0.2)},${point.y + (r * 0.3)}L${point.x + (r * 0.2)},${point.y + (r * 0.6)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
-          <path d={`M${point.x - (r * 0.31)},${point.y - (r * 0.95)}L${point.x - (r * 0.31)},${point.y - (r * 0.65)}`} style={{ fill: TovelundColor.Transparent, stroke: pointIsSelected ? TovelundColor.Black : TovelundColor.BluishGreen, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.6)},${point.y - (r * 0.2)}L${point.x - (r * 0.6)},${point.y + (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime2, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x + (r * 0.4)},${point.y - (r * 0.4)}L${point.x + (r * 0.4)},${point.y - (r * 0.1)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.1)},${point.y + (r * 0.4)}L${point.x - (r * 0.1)},${point.y + (r * 0.7)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime2, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x + (r * 0.1)},${point.y - (r * 0.6)}L${point.x + (r * 0.1)},${point.y - (r * 0.3)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime3, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x + (r * 0.2)},${point.y + (r * 0.3)}L${point.x + (r * 0.2)},${point.y + (r * 0.6)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime2, strokeWidth: 0.005 * scale }} />
+          <path d={`M${point.x - (r * 0.31)},${point.y - (r * 0.95)}L${point.x - (r * 0.31)},${point.y - (r * 0.65)}`} style={{ fill: LotographiaColor.Transparent, stroke: pointIsSelected ? LotographiaColor.Black : LotographiaColor.Lime3, strokeWidth: 0.005 * scale }} />
         </g>;
       }
 
@@ -216,7 +252,7 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
     const rectangle = entity.rectangle;
 
     if (rectangle) {
-      const collection = game.getFeatureCollection(entity.featureCollectionId);
+      const collection = puzzle.getFeatureCollection(entity.featureCollectionId);
       const setLength = collection.set.length;
 
       // could do this by maths but feeling lazy right now
@@ -231,6 +267,7 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
       const width = isHorizontal ? horizontalWidth[setLength] : verticalWidth[setLength];
       const height = isHorizontal ? horizontalHeight[setLength] : verticalHeight[setLength];
       const letters: JSX.Element[] = [];
+      const cursor = mode === "SOLVE" && entity.fixedFeatureId === undefined ? "pointer" : "default";
 
       if (feature !== undefined) {
         const selectedSymbol = collection.set.filter(f => feature && f.id === feature.id)[0].symbol;
@@ -257,7 +294,7 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
 
         const symbolCoordinates = isHorizontal ? horizontalSelectedSymbolCoordinatesList[setLength - 1] : verticalSelectedSymbolCoordinatesList[setLength - 1];
 
-        letters.push(<text key={`entity${entity.id}rectangleSymbol`} x={symbolCoordinates.x} y={symbolCoordinates.y} style={{ fill: TovelundColor.Black, cursor: "pointer", fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
+        letters.push(<text key={`entity${entity.id}rectangleSymbol`} x={symbolCoordinates.x} y={symbolCoordinates.y} style={{ fill: LotographiaColor.Black, cursor: cursor, fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
           {selectedSymbol}
         </text>);
       } else {
@@ -339,7 +376,7 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
           if (entity.innerPencilFeatureIds !== undefined && entity.innerPencilFeatureIds.indexOf(feature.id) !== -1) {
             const symbolCoordinates = innerSymbolMap[innerIndex++];
 
-            letters.push(<text key={`entity${entity.id}rectangleSymbol${feature.symbol}inner`} x={symbolCoordinates.x} y={symbolCoordinates.y} style={{ fill: TovelundColor.Black, cursor: "pointer", fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
+            letters.push(<text key={`entity${entity.id}rectangleSymbol${feature.symbol}inner`} x={symbolCoordinates.x} y={symbolCoordinates.y} style={{ fill: LotographiaColor.Black, cursor: cursor, fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
               {feature.symbol}
             </text>);
           }
@@ -347,15 +384,15 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
           if (entity.outerPencilFeatureIds !== undefined && entity.outerPencilFeatureIds.indexOf(feature.id) !== -1) {
             const symbolCoordinates = outerSymbolMap[outerIndex++];
 
-            letters.push(<text key={`entity${entity.id}rectangleSymbol${feature.symbol}outer`} x={symbolCoordinates.x} y={symbolCoordinates.y} style={{ fill: TovelundColor.Black, cursor: "pointer", fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
+            letters.push(<text key={`entity${entity.id}rectangleSymbol${feature.symbol}outer`} x={symbolCoordinates.x} y={symbolCoordinates.y} style={{ fill: LotographiaColor.Black, cursor: cursor, fontFamily: "monospace", fontSize: symbolCoordinates.size }}>
               {feature.symbol}
             </text>);
           }
         });
       }
 
-      entityElements.push(<g key={`entity${entity.id}rectangle`} transform={`matrix(1,0,0,1,${xOffset + rectangle.x - (width * 2)},${yOffset + rectangle.y - (height * 2)})`} onClick={() => selectEntityId(entity.id)}>
-        <rect width={width * 4} height={height * 4} style={{ cursor: "pointer", fill: rectangleIsSelected ? TovelundColor.Yellow : TovelundColor.White, stroke: TovelundColor.Blue, strokeWidth: 0.005 * scale }} />
+      entityElements.push(<g key={`entity${entity.id}rectangle`} transform={`matrix(1,0,0,1,${xOffset + rectangle.x - (width * 2)},${yOffset + rectangle.y - (height * 2)})`} onClick={() => mode === "DEV" || (mode === "SOLVE" && entity.fixedFeatureId === undefined) ? selectEntityId(entity.id) : {}}>
+        <rect width={width * 4} height={height * 4} style={{ cursor: cursor, fill: rectangleIsSelected ? getColor(color, 6) : LotographiaColor.White, stroke: getColor(color, 3), strokeWidth: 0.005 * scale }} />
         {letters}
       </g>);
     }
@@ -375,7 +412,7 @@ export const getTovelundMap = (game: TovelundGameClass, selectEntityId: (entityI
     xmlSpace="preserve"
     className="image right"
     style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, overflow: "visible", maxWidth: "100%" }}>
-    <rect x="0" y="0" width={1.2 * scale} height={0.8 * scale} style={{ fill: TovelundColor.White, stroke: TovelundColor.Black, strokeWidth: 0.005 * scale }} />
+    <rect x="0" y="0" width={1.2 * scale} height={0.8 * scale} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Black, strokeWidth: 0.005 * scale }} />
     {layersElements}
     {overlayElements}
   </svg>

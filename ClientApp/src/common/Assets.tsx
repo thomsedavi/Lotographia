@@ -1,5 +1,50 @@
 import * as React from 'react';
 
+export interface TovelundPuzzlesIconProps {
+  onMouseEnter: () => void,
+  onMouseLeave: () => void,
+  color: string
+}
+
+export const TovelundPuzzlesIcon: React.StatelessComponent<TovelundPuzzlesIconProps> = (props) => {
+  return <svg
+    onMouseEnter={props.onMouseEnter}
+    onMouseLeave={props.onMouseLeave}
+    onTouchStart={props.onMouseEnter}
+    key="PaperFolliesIcon"
+    viewBox="0 0 800 600"
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlnsXlink="http://www.w3.org/1999/xlink"
+    xmlSpace="preserve"
+    style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, overflow: "visible", width: "24em", maxWidth: "100%", cursor: "pointer" }}>
+    <text x="0.836px" y="600px" style={{ fontFamily: "'Arial-BoldMT', 'Arial', sans-serif", fontWeight: 700, fontSize: "96px", fill: "rgb(34,68,0)" }}>Tovelund Puzzles</text>
+    <g transform="matrix(1,0,0,1,-20,0)">
+      <path d="M200,380L230,430L340,440L410,400L400,310L340,350L240,340L220,310L200,380Z" style={{ fill: "rgb(119,187,255)" }} />
+    </g>
+    <g transform="matrix(1,0,0,1,0,-115)">
+      <path d="M210,365L240,415L320,425L370,395L360,345L330,355L260,345L220,310L210,365Z" style={{ fill: "rgb(119,187,255)" }} />
+    </g>
+    <path d="M180,90L240,110L320,110L370,90L320,60L220,60L180,90Z" style={{ fill: "rgb(119,187,255)" }} />
+    <path d="M180,420L220,470L340,470L410,420L370,220L390,90L320,50L250,60L190,90C190,90 226.204,200.926 230,200C233.796,199.074 180,420 180,420Z" style={{ fill: "none", stroke: "rgb(136,68,0)", strokeWidth: "4px" }} />
+    <path d="M280,200L310,200L340,140L320,120L280,120L250,140L280,200Z" style={{ fill: props.color }} />
+    <path d="M200,180L90,200L60,170L180,160L200,180Z" style={{ fill: props.color }} />
+    <path d="M180,140L70,130L50,100L160,120" style={{ fill: props.color }} />
+    <path d="M400,190L480,210L470,180L400,160" style={{ fill: props.color }} />
+    <path d="M410,140L500,120L480,90L420,100" style={{ fill: props.color }} />
+    <path d="M20,360L190,490L580,490L790,350L680,280L780,180L550,90" style={{ fill: "none", stroke: "rgb(0,136,68)", strokeWidth: "4px" }} />
+    <path d="M530,350L560,390L660,390L640,280L570,290L530,250L530,350Z" style={{ fill: "none", stroke: "rgb(0,68,136)", strokeWidth: "4px" }} />
+    <path d="M550,290L610,250L660,290L630,230L590,200L510,240" style={{ fill: "rgb(255,119,187)" }} />
+    <path d="M580,380L590,330L620,330L610,380" style={{ fill: "none", stroke: "rgb(68,136,0)", strokeWidth: "4px" }} />
+    <path d="M420,390L530,380" style={{ fill: "none", stroke: "rgb(68,0,136)", strokeWidth: "4px", strokeDasharray: "28,20,12,20" }} />
+    <path d="M170,320L20,270" style={{ fill: "none", stroke: "rgb(68,0,136)", strokeWidth: "4px", strokeDasharray: "28,20,12,20" }} />
+    <path d="M690,180L660,250" style={{ fill: "none", stroke: "rgb(68,0,136)", strokeWidth: "4px", strokeDasharray: "28,20,12,20" }} />
+    <path d="M490,150L650,170" style={{ fill: "none", stroke: "rgb(68,0,136)", strokeWidth: "4px", strokeDasharray: "28,20,12,20" }} />
+    <path d="M510,310L400,260" style={{ fill: "none", stroke: "rgb(68,0,136)", strokeWidth: "4px", strokeDasharray: "28,20,12,20" }} />
+    <path d="M610,320L600,300L630,300L630,320" style={{ fill: "rgb(119,187,255)" }} />
+  </svg>;
+}
+
 export const ImageLoading = <svg
   key="ImageLoadingIcon"
   viewBox="0 0 128 128"

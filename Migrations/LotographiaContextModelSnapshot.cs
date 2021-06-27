@@ -145,7 +145,7 @@ namespace Lotographia.Migrations
                     b.ToTable("PaperFolliesParticipants");
                 });
 
-            modelBuilder.Entity("Lotographia.Models.TovelundGame", b =>
+            modelBuilder.Entity("Lotographia.Models.TovelundPuzzle", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -154,8 +154,7 @@ namespace Lotographia.Migrations
 
                     b.Property<string>("Design")
                         .IsRequired()
-                        .HasColumnType("nvarchar(4000)")
-                        .HasMaxLength(4000);
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -164,7 +163,7 @@ namespace Lotographia.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TovelundGames");
+                    b.ToTable("TovelundPuzzles");
                 });
 
             modelBuilder.Entity("Lotographia.Models.PaperFolliesParticipant", b =>

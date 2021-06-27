@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Lotographia.Migrations
 {
     [DbContext(typeof(LotographiaContext))]
-    [Migration("20210418051615_CreateTovelundGame")]
-    partial class CreateTovelundGame
+    [Migration("20210626234912_CreateTovelundPuzzle")]
+    partial class CreateTovelundPuzzle
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -147,7 +147,7 @@ namespace Lotographia.Migrations
                     b.ToTable("PaperFolliesParticipants");
                 });
 
-            modelBuilder.Entity("Lotographia.Models.TovelundGame", b =>
+            modelBuilder.Entity("Lotographia.Models.TovelundPuzzle", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -156,8 +156,7 @@ namespace Lotographia.Migrations
 
                     b.Property<string>("Design")
                         .IsRequired()
-                        .HasColumnType("nvarchar(4000)")
-                        .HasMaxLength(4000);
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -166,7 +165,7 @@ namespace Lotographia.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TovelundGames");
+                    b.ToTable("TovelundPuzzles");
                 });
 
             modelBuilder.Entity("Lotographia.Models.PaperFolliesParticipant", b =>

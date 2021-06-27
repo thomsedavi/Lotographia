@@ -1,20 +1,4 @@
-﻿// from https://www.nature.com/articles/nmeth.1618
-
-export enum TovelundColor {
-  Black = "rgb(0,0,0)",
-  Orange = "rgb(230,159,0)",
-  SkyBlue = "rgb(86,180,233)",
-  BluishGreen = "rgb(0,158,115)",
-  Yellow = "rgb(240,228,66)",
-  Blue = "rgb(0,114,178)",
-  Vermillion = "rgb(213,94,0)",
-  ReddishPurple = "rgb(204,121,167)",
-  White = "rgb(255,255,255)",
-  Transparent = "transparent",
-  None = "none"
-}
-
-export enum TovelundElementType {
+﻿export enum TovelundElementType {
   None = "NONE",
   Rectangle = "RECTANGLE",
   Point = "POINT",
@@ -139,7 +123,7 @@ export interface TovelundEntity {
   featureCollectionId: string
 }
 
-export interface TovelundGame {
+export interface TovelundPuzzleDesign {
   scale: number,
   entities: TovelundEntity[],
   entityGroups: TovelundEntityGroup[],

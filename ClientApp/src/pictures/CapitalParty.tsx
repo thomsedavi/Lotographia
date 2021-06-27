@@ -616,7 +616,7 @@ export class CapitalParty extends React.Component<any, CapitalPartyState> {
             }
 
           ],
-          contents: [`${selectedId1 == Option1.Robot ? "Robots" : "Octopuses"}, eh? This is fun, let"s add another theme`],
+          contents: [`${selectedId1 === Option1.Robot ? "Robots" : "Octopuses"}, eh? This is fun, let"s add another theme`],
           selectOptions: [
             {
               description: "Either humans with bumpy foreheads and pointy ears, or rejected Muppet concepts",
@@ -775,7 +775,7 @@ export class CapitalParty extends React.Component<any, CapitalPartyState> {
                 const textElements = this.state.textElements;
 
                 textElements.forEach(textElement => {
-                  if (textElement.type == TextType.Custom)
+                  if (textElement.type === TextType.Custom)
                     textElement.text = "";
                 });
 

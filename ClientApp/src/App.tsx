@@ -11,7 +11,7 @@ import { LayersTool } from "./pictures/LayersTool";
 import { PaperFollies } from "./paperFollies/PaperFollies";
 import { WordGameTest } from "./pictures/WordGameTest";
 import { LexicologerNew, LexicologerGame } from "./lexicologer/Lexicologer";
-import { Tovelund } from "./tovelund/TovelundGame";
+import { TovelundPuzzles } from "./tovelund/TovelundPuzzles";
 import { TovelundAdmin } from "./tovelund/TovelundAdmin";
 import { Style } from "./components/Style";
 
@@ -31,7 +31,7 @@ export default class App extends React.Component {
       <Route path="/word-game-test" component={WordGameTest} />
       <Route path="/lexicologer/:gameId" component={LexicologerGame} />
       <Route path="/lexicologer" component={LexicologerNew} />
-      <Route path="/tovelund" component={Tovelund} />
+      <Route path="/tovelund-puzzles" component={TovelundPuzzles} />
       <Route path="/tovelund-admin" component={TovelundAdmin} />
       <Route path="/style" component={Style} />
     </Switch>;

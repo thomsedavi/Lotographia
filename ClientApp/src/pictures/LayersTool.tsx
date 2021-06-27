@@ -48,7 +48,7 @@ export class LayersTool extends React.Component<any, LayersToolState> {
   }
 
   next = () => {
-    if (this.state.stage == 0) {
+    if (this.state.stage === 0) {
       this.updateImage();
     }
 
