@@ -34,6 +34,11 @@
     font-style: normal;
 }
 
+.container {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
 @media all and (max-width: 575px) {
     .container {
         max-width: 500px;

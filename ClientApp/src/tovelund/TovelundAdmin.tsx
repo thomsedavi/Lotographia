@@ -849,6 +849,20 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
     });
   }
 
+  addEntityGroupTypeToSequenceRule = () => {
+    const puzzle = this.state.puzzle;
+
+    if (this.state.selectedRuleId !== undefined) {
+      if (this.state.selectedEntityGroupTypeId !== undefined) {
+        puzzle.addEntityGroupTypeToSequenceRule(this.state.selectedRuleId, this.state.selectedEntityGroupTypeId);
+      }
+    }
+
+    this.setState({
+      puzzle: puzzle
+    });
+  }
+
   changeScale = (scale: string) => {
     const puzzle = this.state.puzzle;
 
@@ -1238,9 +1252,15 @@ export class TovelundAdmin extends React.Component<any, TovelundAdminState> {
           <div className="component buttons">
             <button className="action" onClick={this.addFeatureToSequenceAtIndex}>Add Feature To Sequence At Index</button>
           </div>
-          {this.state.selectedSequenceIndex !== undefined && < div className="component">
-            <div className="information">Features: {sequenceRule.featureIds[this.state.selectedSequenceIndex].map(featureId => this.state.puzzle.getFeature(featureId).name).join(",")}</div>
+          {this.state.selectedSequenceIndex !== undefined && <div className="component">
+            <div className="information">Features: {sequenceRule.featureIds[this.state.selectedSequenceIndex].length === 0 ? "Any" : sequenceRule.featureIds[this.state.selectedSequenceIndex].map(featureId => this.state.puzzle.getFeature(featureId).name).join(",")}</div>
           </div>}
+          <div className="component buttons">
+            <button className="action" onClick={this.addEntityGroupTypeToSequenceRule}>Add Entity Group Type To Sequence Rule</button>
+          </div>
+          <div className="component">
+            <div className="information">Entity Group Types: {sequenceRule.entityGroupTypeIds.map(entityGroupTypeId => this.state.puzzle.getEntityGroupType(entityGroupTypeId).name).join(",")}</div>
+          </div>
         </>;
       }
     }

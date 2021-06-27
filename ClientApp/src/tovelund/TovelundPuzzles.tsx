@@ -316,11 +316,11 @@ export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> 
     // could do with maths, or store somewhere else
     const symbolMapLists = [
       [{ x: 0.9, y: 7.25, size: 8 }],
-      [{ x: 2.9, y: 15.25, size: 4 }, { x: 2.9, y: 19.25, size: 4 }],
+      [{ x: 0.9, y: 7.25, size: 4 }, { x: 4.9, y: 7.25, size: 4 }],
       [{ x: 0.9, y: 7.25, size: 4 }, { x: 4.9, y: 7.25, size: 4 }, { x: 0.9, y: 11.25, size: 4 }],
-      [{ x: 0.9, y: 11.25, size: 4 }, { x: 4.9, y: 11.25, size: 4 }, { x: 0.9, y: 15.25, size: 4 }, { x: 4.9, y: 15.25, size: 4 }],
+      [{ x: 0.9, y: 7.25, size: 4 }, { x: 4.9, y: 7.25, size: 4 }, { x: 8.9, y: 7.25, size: 4 }, { x: 12.9, y: 7.25, size: 4 }],
       [{ x: 0.9, y: 7.25, size: 4 }, { x: 4.9, y: 7.25, size: 4 }, { x: 0.9, y: 11.25, size: 4 }, { x: 4.9, y: 11.25, size: 4 }, { x: 0.9, y: 15.25, size: 4 }],
-      [{ x: 0.9, y: 13.25, size: 4 }, { x: 4.9, y: 13.25, size: 4 }, { x: 0.9, y: 17.25, size: 4 }, { x: 4.9, y: 17.25, size: 4 }, { x: 0.9, y: 21.25, size: 4 }, { x: 4.9, y: 21.25, size: 4 }],
+      [{ x: 0.9, y: 7.25, size: 4 }, { x: 4.9, y: 7.25, size: 4 }, { x: 8.9, y: 7.25, size: 4 }, { x: 12.9, y: 7.25, size: 4 }, { x: 16.9, y: 7.25, size: 4 }, { x: 20.9, y: 7.25, size: 4 }],
       [{ x: 0.9, y: 7.25, size: 4 }, { x: 4.9, y: 7.25, size: 4 }, { x: 0.9, y: 11.25, size: 4 }, { x: 4.9, y: 11.25, size: 4 }, { x: 0.9, y: 15.25, size: 4 }, { x: 4.9, y: 15.25, size: 4 }, { x: 0.9, y: 19.25, size: 4 }],
       [{ x: 0.9, y: 7.25, size: 4 }, { x: 4.9, y: 7.25, size: 4 }, { x: 0.9, y: 11.25, size: 4 }, { x: 4.9, y: 11.25, size: 4 }, { x: 0.9, y: 15.25, size: 4 }, { x: 4.9, y: 15.25, size: 4 }, { x: 0.9, y: 19.25, size: 4 }, { x: 4.9, y: 19.25, size: 4 }]
     ];
@@ -401,7 +401,7 @@ export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> 
           </select>
         </div>
         <div className="component">
-          <div style={{ width: "24em", margin: "auto" }}>
+          <div style={{ width: "32em", margin: "auto" }}>
             {getTovelundMap(this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].design, (entityId: string) => { }, [], "PREVIEW")}
           </div>
         </div>
@@ -495,43 +495,47 @@ export class TovelundPuzzles extends React.Component<any, TovelundPuzzlesState> 
             <div className="subtitle">{this.state.puzzles.filter(g => g.id === this.state.selectedPuzzleId)[0].title}</div>
           </div>
           <div className="component">
-            <div style={{ width: "24em", margin: "auto", display: "inline-block" }}>
+            <div style={{ maxWidth: "32em", margin: "auto" }}>
               {this.state.showHelp ? help : getTovelundMap(design, this.selectEntityId, selectedElements, "SOLVE")}
             </div>
-            <div style={{ width: "4em", margin: "1em auto auto 1em", display: "inline-block" }}>
+          </div>
+          <div className="component">
+            <div style={{ maxWidth: "12em", margin: "auto" }}>
               <svg
                 key="TovelundTools"
-                viewBox={`0 0 8 24`}
+                viewBox={`0 0 24 8`}
                 version="1.1"
                 xmlns="http://www.w3.org/2000/svg"
                 xmlnsXlink="http://www.w3.org/1999/xlink"
                 xmlSpace="preserve"
                 className="image right"
                 style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2, overflow: "visible", maxWidth: "100%" }}>
+                <g onClick={() => this.selectDrawMode("SELECT")}>
+                  <rect x={0} y={0} width={4} height={4} style={{ fill: this.state.mode === "SELECT" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={0.9} y={3.3} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 4, cursor: "pointer" }}>X</text>
+                </g>
                 <g onClick={() => this.selectDrawMode("OUTER")}>
-                  <rect x={0} y={0} width={4} height={4} style={{ fill: this.state.mode === "OUTER" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
-                  <text x={0.4} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
-                  <text x={2.8} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
-                  <text x={0.4} y={3.75} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
+                  <rect x={4} y={0} width={4} height={4} style={{ fill: this.state.mode === "OUTER" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={4.4} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
+                  <text x={6.8} y={1.25} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
+                  <text x={4.4} y={3.75} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
                 </g>
                 <g onClick={() => this.selectDrawMode("INNER")}>
-                  <rect x={4} y={0} width={4} height={4} style={{ fill: this.state.mode === "INNER" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
-                  <text x={4.8} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
-                  <text x={5.6} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
-                  <text x={6.4} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
-                </g>
-                <g onClick={() => this.selectDrawMode("SELECT")}>
-                  <rect x={0} y={4} width={4} height={4} style={{ fill: this.state.mode === "SELECT" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
-                  <text x={0.9} y={7.3} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 4, cursor: "pointer" }}>X</text>
+                  <rect x={8} y={0} width={4} height={4} style={{ fill: this.state.mode === "INNER" ? getColor(color, 6) : LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={8.8} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>X</text>
+                  <text x={9.6} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Y</text>
+                  <text x={10.4} y={2.5} style={{ fill: LotographiaColor.Black, fontFamily: "monospace", fontSize: 1.5, cursor: "pointer" }}>Z</text>
                 </g>
                 <g onClick={() => this.displayHelp()}>
-                  <rect x={4} y={4} width={4} height={4} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
-                  <text x={4.9} y={7.3} style={{ fill: LotographiaColor.Violet4, cursor: "pointer", fontFamily: "monospace", fontSize: 4 }}>?</text>
+                  <rect x={12} y={0} width={4} height={4} style={{ fill: LotographiaColor.White, stroke: LotographiaColor.Transparent, cursor: "pointer" }} />
+                  <text x={12.9} y={3.3} style={{ fill: LotographiaColor.Violet4, cursor: "pointer", fontFamily: "monospace", fontSize: 4 }}>?</text>
                 </g>
-                <rect x={0} y={0} width={8} height={24} style={{ fill: LotographiaColor.None, stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
-                <path d="M0,4L8,4" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
-                <path d="M0,8L8,8" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
-                <path d="M4,0L4,8" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <rect x={0} y={0} width={24} height={8} style={{ fill: LotographiaColor.None, stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M0,4L24,4" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M4,0L4,4" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M8,0L8,4" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M12,0L12,4" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
+                <path d="M16,0L16,4" style={{ stroke: LotographiaColor.Black, strokeWidth: 0.2 }} />
                 {symbolsElement}
               </svg>
             </div>

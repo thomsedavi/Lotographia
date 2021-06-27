@@ -267,7 +267,7 @@ export const getTovelundMap = (puzzle: TovelundPuzzleDesignClass, selectEntityId
       const width = isHorizontal ? horizontalWidth[setLength] : verticalWidth[setLength];
       const height = isHorizontal ? horizontalHeight[setLength] : verticalHeight[setLength];
       const letters: JSX.Element[] = [];
-      const cursor = mode === "SOLVE" && entity.fixedFeatureId === undefined ? "pointer" : "default";
+      const cursor = mode === "DEV" || (mode === "SOLVE" && entity.fixedFeatureId === undefined) ? "pointer" : "default";
 
       if (feature !== undefined) {
         const selectedSymbol = collection.set.filter(f => feature && f.id === feature.id)[0].symbol;

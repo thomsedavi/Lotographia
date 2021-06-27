@@ -4,7 +4,7 @@ import { FontFamily, LayerType, Orientation } from "../../common/Enums";
 export const TheHighSeas: GameOptionDetails = {
   id: "thehighseas",
   name: "The High Seas",
-  prompt: "...",
+  prompt: "Prepare for nautical adventure! Raise the anchor, stow the cargo crates and get ready to explore the ocean with nothing but a packet of ship's biscuit.",
   footnote: "I took this photo in Lyall Bay in Wellington, was disappointed to discover an identical ship in Ōpunake! I feel like playgrounds should be unique, not come from kit sets.",
   height: 900,
   width: 600,

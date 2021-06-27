@@ -341,6 +341,10 @@ export class TovelundPuzzleDesignClass {
     return this.puzzleDesign.entityGroups.filter(g => g.id === entityGroupId)[0];
   }
 
+  getEntityGroupsWithTypes = (entityGroupTypeIds: string[]) => {
+    return this.puzzleDesign.entityGroups.filter(g => entityGroupTypeIds.indexOf(g.entityGroupTypeId) !== -1);
+  }
+
   addEntityToGroup = (entityGroupId: string, entityId: string) => {
     const entityGroup = this.getEntityGroup(entityGroupId);
 
@@ -661,6 +665,15 @@ export class TovelundPuzzleDesignClass {
     }
   }
 
+  addEntityGroupTypeToSequenceRule = (ruleId: string, entityGroupTypeId: string) => {
+    const rule = this.getRule(ruleId);
+    const sequenceRule = rule as TovelundSequenceRule;
+
+    if (sequenceRule.entityGroupTypeIds.indexOf(entityGroupTypeId) === -1) {
+      sequenceRule.entityGroupTypeIds.push(entityGroupTypeId);
+    }
+  }
+
   setSequenceCanRevisit = (ruleId: string, canRevisit: boolean) => {
     const rule = this.getRule(ruleId);
     const sequenceRule = rule as TovelundSequenceRule;
@@ -909,41 +922,41 @@ export class TovelundPuzzleDesignClass {
     return minimumDistance;
   }
 
-  traverseFromGroup = (group: TovelundEntityGroup, entityGroupTypeIds: string[], visitedGroupIds: string[], sequenceEntityIds: string[][]) => {
+  traverseFromGroup = (group: TovelundEntityGroup, unvisitedGroups: TovelundEntityGroup[], sequenceEntityIds: string[][], visitedEntityIds: string[]) => {
     if (sequenceEntityIds.length === 0) {
       return true;
     } else {
       let canTraverse = false;
-
       const nextEntities = [...sequenceEntityIds].slice(1);
 
       sequenceEntityIds[0].map((entityId: string) => {
-        if (group.entityIds.indexOf(entityId) !== -1) {
-          const groupIds = [...visitedGroupIds];
-          if (groupIds.indexOf(group.id) !== -1) {
-            groupIds.push(group.id);
+        if (visitedEntityIds.indexOf(entityId) === -1) {
+          const newVisitedEntityIds = [...visitedEntityIds];
+          newVisitedEntityIds.push(entityId);
+
+          if (group.entityIds.indexOf(entityId) !== -1) {
+            // attempt to revisit this group
+            const revisit = this.traverseFromGroup(group, unvisitedGroups, nextEntities, newVisitedEntityIds);
+
+            if (revisit) {
+              canTraverse = true;
+            } else {
+              // try visiting other groups connected to the same entity
+
+              const nextGroups = unvisitedGroups.filter(g => g.entityIds.indexOf(entityId) !== -1);
+
+              nextGroups.map((nextGroup: TovelundEntityGroup) => {
+                const newUnvisitedGroups = [...unvisitedGroups];
+                newUnvisitedGroups.splice(newUnvisitedGroups.indexOf(nextGroup), 1);
+
+                const canTraverseFromGroup: boolean = this.traverseFromGroup(nextGroup, newUnvisitedGroups, nextEntities, newVisitedEntityIds);
+
+                if (canTraverseFromGroup) {
+                  canTraverse = true;
+                }
+              });
+            }
           }
-
-          const thisGroupCanTraverseAgain = this.traverseFromGroup(group, entityGroupTypeIds, groupIds, nextEntities);
-
-          if (thisGroupCanTraverseAgain) {
-            canTraverse = true
-          } else {
-            const nextGroups = this.getEntityGroupsWithEntity(entityId).filter(g => entityGroupTypeIds.indexOf(g.entityGroupTypeId) !== -1).filter(g => visitedGroupIds.indexOf(g.id) === -1);
-
-            nextGroups.map((nextGroup: TovelundEntityGroup) => {
-              const nextGroupIds = [...visitedGroupIds];
-              nextGroupIds.push(nextGroup.id);
-
-              const canTraverseFromGroup = this.traverseFromGroup(nextGroup, entityGroupTypeIds, nextGroupIds, nextEntities);
-
-              if (canTraverseFromGroup) {
-                canTraverse = true;
-              }
-            });
-          }
-        } else {
-            return false;
         }
       });
 
@@ -951,16 +964,18 @@ export class TovelundPuzzleDesignClass {
     }
   }
 
-  traverseSequence = (entityGroupTypeIds: string[], sequenceEntityIds: string[][]) => {
+  traverseSequence = (unvisitedGroups: TovelundEntityGroup[], sequenceEntityIds: string[][]) => {
     let canTraverse = false;
 
     sequenceEntityIds[0].map((entityId: string) => {
-      const groups = this.getEntityGroupsWithEntity(entityId).filter(g => entityGroupTypeIds.indexOf(g.entityGroupTypeId) !== -1);
+      const groups = unvisitedGroups.filter(g => g.entityIds.indexOf(entityId) !== -1);
 
       groups.map((group: TovelundEntityGroup) => {
         const nextEntities = [...sequenceEntityIds].slice(1);
+        const newUnvisitedGroups = [...unvisitedGroups];
+        newUnvisitedGroups.splice(newUnvisitedGroups.indexOf(group), 1);
 
-        const canTraverseFromGroup: boolean = this.traverseFromGroup(group, entityGroupTypeIds, [group.id], nextEntities);
+        const canTraverseFromGroup: boolean = this.traverseFromGroup(group, newUnvisitedGroups, nextEntities, [entityId]);
 
         if (canTraverseFromGroup) {
           canTraverse = true;
@@ -1135,7 +1150,9 @@ export class TovelundPuzzleDesignClass {
               const entityIds: string[] = [];
 
               this.puzzleDesign.entities.map((entity: TovelundEntity) => {
-                if ((entity.fixedFeatureId !== undefined && sequenceIds.indexOf(entity.fixedFeatureId) !== -1) || (entity.selectedFeatureId !== undefined && sequenceIds.indexOf(entity.selectedFeatureId) !== -1)) {
+                if (entity.fixedFeatureId !== undefined && (sequenceIds.length === 0 || sequenceIds.indexOf(entity.fixedFeatureId) !== -1)) {
+                  entityIds.push(entity.id);
+                } else if (entity.selectedFeatureId !== undefined && (sequenceIds.length === 0 || sequenceIds.indexOf(entity.selectedFeatureId) !== -1)) {
                   entityIds.push(entity.id);
                 }
               });
@@ -1143,7 +1160,9 @@ export class TovelundPuzzleDesignClass {
               entitySequenceIds.push(entityIds);
             }
 
-            const canTraverseSequence = this.traverseSequence(sequenceRule.entityGroupTypeIds, entitySequenceIds);
+            const unvisitedGroups = this.getEntityGroupsWithTypes(sequenceRule.entityGroupTypeIds);
+
+            const canTraverseSequence = this.traverseSequence(unvisitedGroups, entitySequenceIds);
 
             if (sequenceRule.mode === "MATCH" && !canTraverseSequence) {
               clue.passes = false;

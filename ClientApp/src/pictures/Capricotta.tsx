@@ -441,7 +441,7 @@ export class Capricotta extends React.Component<any, CapricottaState> {
           ],
           loadingState: this.state.previewURL === undefined || !this.state.imageLoaded ? StatusLoading : StatusReady,
           contents: [
-            "Calculating possible futures..."
+            "Generating nonsense..."
           ],
           infoTitle: this.title
         };
